@@ -1,13 +1,13 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-06-18 18:13:38
+ * @LastEditTime: 2022-06-19 20:11:53
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
  */
 import React, { useState, useEffect } from 'react';
-import 'antd/dist/antd.css';
+import 'antd/dist/antd.min.css';
 import { Button, Tabs, InputNumber, Layout, Select, Divider, Row, Col, List, Switch, Slider, Upload } from "antd";
 import Canvas from './components/Canvas';
 import papa from 'papaparse';
@@ -21,32 +21,8 @@ const { TabPane } = Tabs;
 const { Header, Footer, Sider, Content } = Layout;
 const { Option } = Select;
 
-function handleUploadComplete(results: papa.ParseResult<any>) {
-  function groupBy(xs: any[], key: string) {
-    return xs.reduce(function (rv, x) {
-      (rv[x[key]] = rv[x[key]] || []).push(x);
-      return rv;
-    }, {});
-  };
-  const data = results.data;
-  const groupedData = groupBy(data, 'lineId');
-  const lines: Line[] = [];
-  console.log(groupedData);
-  for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
-    const line: Line = rawLine.map((rawPoint: any) => {
-      return {
-        x: parseFloat(rawPoint.x),
-        y: parseFloat(rawPoint.y)
-      }
-    })
-    lines.push(line);
-  }
-  console.log(lines);
-  return lines;
-}
-
 function App() {
-
+  const [lines, setLines] = useState<Line[]>([]);
   return (
     <div className="App">
       <Layout>
@@ -59,7 +35,28 @@ function App() {
               beforeUpload={file => {
                 papa.parse(file, {
                   header: true,
-                  complete: handleUploadComplete
+                  complete: (results: papa.ParseResult<any>) => {
+                    function groupBy(xs: any[], key: string) {
+                      return xs.reduce(function (rv, x) {
+                        (rv[x[key]] = rv[x[key]] || []).push(x);
+                        return rv;
+                      }, {});
+                    };
+                    const data = results.data;
+                    const groupedData = groupBy(data, 'lineId');
+                    const lines: Line[] = [];
+                    console.log(groupedData);
+                    for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
+                      const line: Line = rawLine.map((rawPoint: any) => {
+                        return {
+                          x: parseFloat(rawPoint.x),
+                          y: parseFloat(rawPoint.y)
+                        }
+                      })
+                      lines.push(line);
+                    }
+                    setLines(lines);
+                  }
                 });
                 // Prevent upload
                 return false;
@@ -71,7 +68,7 @@ function App() {
             </Upload>
           </Sider>
           <Content>
-            <Canvas></Canvas>
+            <Canvas lines={lines}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>

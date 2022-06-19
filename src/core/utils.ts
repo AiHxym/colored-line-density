@@ -1,13 +1,13 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-06-18 14:50:34
+ * @LastEditTime: 2022-06-19 19:51:21
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
  */
 
-import { Line } from './defs/line';
+import { ImportamceLine, Line } from './defs/line';
 
 /**
  * Convert integer to float for shaders.
@@ -54,6 +54,11 @@ function getYValue(line: Line, x: number): number {
         throw new Error(`x value ${x} is out of range [${min}, ${max}]`);
     }
     const index = binarySearch(line, x);
+    if (index === 0) {
+        return line[0].y;
+    } else if (index === line.length - 1) {
+        return line[line.length - 1].y;
+    }
     const [prevX, prevY] = [line[index - 1].x, line[index - 1].y];
     const [nextX, nextY] = [line[index].x, line[index].y];
     return prevY + (nextY - prevY) * (x - prevX) / (nextX - prevX);
@@ -108,4 +113,20 @@ export function calculateAllLineBandDepth(lines: Line[], ensembleNum: number, ro
         bandDepths.push(avgBandDepth / roundNum);
     }
     return bandDepths;
+}
+
+export function calculateImportanceLinesWithResampling(lines: Line[], ensembleNum: number, roundNum: number, sampleNum: number): ImportamceLine[] {
+    const min = Math.min(...lines.map(line => line[0].x));
+    const max = Math.max(...lines.map(line => line[line.length - 1].x));
+    const resampledLines = resampleLines(lines, [min, max], sampleNum);
+    const bandDepths = calculateAllLineBandDepth(resampledLines, ensembleNum, roundNum);
+    const importamceLines: ImportamceLine[] = [];
+    for (let i = 0; i < lines.length; ++i) {
+        importamceLines.push({
+            line: resampledLines[i],
+            localImportance: [],
+            globalImportance: bandDepths[i]
+        });
+    }
+    return importamceLines;
 }

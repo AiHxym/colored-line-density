@@ -7,11 +7,20 @@ export interface LineData {
     /**
      * array of x-values
      */
+
     xValues: Float32Array;
+
     /**
      * array of y-values
      */
+
     yValues: Float32Array;
+
+    /**
+     * global importance of the line
+     */
+
+    globalImportance: number;
 }
 
 export interface BinConfig {
@@ -210,10 +219,12 @@ export default async function density(
         frag: `
                 precision mediump float;
                 varying vec4 uv;
+
+                uniform float globalImportance;
             
                 void main() {
                 // we will control the color with the color mask
-                gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+                gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * globalImportance;
                 }`
         ,
 
@@ -222,6 +233,7 @@ export default async function density(
             maxY: regl.prop<any, "maxY">("maxY"),
             column: regl.prop<any, "column">("column"),
             row: regl.prop<any, "row">("row"),
+            globalImportance: regl.prop<any, "globalImportance">("globalImportance"),
         },
 
         attributes: {
@@ -718,6 +730,7 @@ export default async function density(
                     lines[series - finishedSeries] = {
                         values: ndarray(data[lineClusterIndex][series].yValues),
                         times: ndarray(data[lineClusterIndex][series].xValues),
+                        globalImportance: data[lineClusterIndex][series].globalImportance,
                         maxY: binY.stop,
                         maxX: maxDataPoints,
                         lineIdx: series,
