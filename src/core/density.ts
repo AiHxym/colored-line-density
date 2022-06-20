@@ -856,7 +856,6 @@ export default async function density(
 
             framebuffer: regl.prop<any, "out">("out"),
         });
-        console.log(colormaps[lineClusterIndex]);
 
         drawClusteredDensity({
             buffer: heatBuffer[lineClusterIndex],

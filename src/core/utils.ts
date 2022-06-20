@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-06-19 19:51:21
+ * @LastEditTime: 2022-06-20 13:55:21
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
@@ -89,10 +89,10 @@ export function calculateAllLineBandDepth(lines: Line[], ensembleNum: number, ro
             throw new Error(`Ensemble number ${ensembleNum} is too large for line ${i}`);
         }
         let avgBandDepth = 0;
-        for (let j = 0; j < roundNum; ++j) {
+        for (let round = 0; round < roundNum; ++round) {
             const counter = new Array(lines[i].length).fill({ low: Infinity, high: -Infinity });
             for (let ensembleIndex = 0; ensembleIndex < ensembleNum; ++ensembleIndex) {
-                const lineNum = randomInt(0, lines[i].length - 1);
+                const lineNum = randomInt(0, lines.length - 1);
                 for (let j = 0; j < lines[lineNum].length; ++j) {
                     if (lines[lineNum][j].y < counter[j].low) {
                         counter[j].low = lines[lineNum][j].y;
@@ -106,6 +106,9 @@ export function calculateAllLineBandDepth(lines: Line[], ensembleNum: number, ro
             for (let j = 0; j < counter.length; ++j) {
                 if (lines[i][j].y >= counter[j].low && lines[i][j].y <= counter[j].high) {
                     ++bandDepth;
+                } else {
+                    bandDepth = 0;
+                    break;
                 }
             }
             avgBandDepth += bandDepth / counter.length;

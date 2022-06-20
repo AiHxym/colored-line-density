@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-06-19 21:43:47
+ * @LastEditTime: 2022-06-20 14:52:33
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -18,7 +18,7 @@ interface CanvasProps {
 export default function Canvas(props: CanvasProps) {
     useEffect(() => {
         const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-        const importanceLines = calculateImportanceLinesWithResampling(props.lines, 5, 10, 100);
+        const importanceLines = calculateImportanceLinesWithResampling(props.lines, 2, 10, 100);
         const lineData: LineData[] = importanceLines.map((importanceLine: ImportamceLine) => {
             return {
                 xValues: new Float32Array(importanceLine.line.map((point: { x: number, y: number }) => point.x)),
@@ -31,7 +31,7 @@ export default function Canvas(props: CanvasProps) {
             const lineDensity = density(
                 // the time series data
                 [lineData],
-                [0, 99, 0, 499],
+                [0, 99, 0, 100],
                 // x binning
                 { start: 0, stop: 1600, step: 1 },
                 // y binning
