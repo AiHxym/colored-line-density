@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-06-20 14:52:33
+ * @LastEditTime: 2022-06-22 20:45:34
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -10,6 +10,7 @@ import React, { useEffect } from 'react';
 import { ImportamceLine, Line } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling } from '../core/utils';
 import density, { LineData } from '../core/density';
+import { computeAllMaximalGroups } from "../core/trend-detector"
 
 interface CanvasProps {
     lines: Line[];
@@ -26,7 +27,12 @@ export default function Canvas(props: CanvasProps) {
                 globalImportance: importanceLine.globalImportance
             }
         });
-        console.log(lineData);
+
+        if (props.lines.length > 0) {
+            console.log(computeAllMaximalGroups(props.lines, [10, 20], [-1000, 1000], 5));
+        }
+
+        /*
         if (lineData.length > 0) {
             const lineDensity = density(
                 // the time series data
@@ -43,7 +49,7 @@ export default function Canvas(props: CanvasProps) {
             lineDensity.then((result) => {
                 result.destroy();
             });
-        }
+        }*/
 
     }, [props.lines]);
     return (
