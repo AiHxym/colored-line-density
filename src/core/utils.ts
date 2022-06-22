@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-06-20 13:55:21
+ * @LastEditTime: 2022-06-22 21:15:42
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
@@ -48,10 +48,11 @@ function binarySearch(line: Line, x: number): number {
     return mid;
 }
 
-function getYValue(line: Line, x: number): number {
+function getYValue(line: Line, x: number): number | null {
     const [min, max] = [line[0].x, line[line.length - 1].x];
     if (x < min || x > max) {
-        throw new Error(`x value ${x} is out of range [${min}, ${max}]`);
+        // throw new Error(`x value ${x} is out of range [${min}, ${max}]`);
+        return null;
     }
     const index = binarySearch(line, x);
     if (index === 0) {
@@ -74,7 +75,7 @@ function resampleLine(line: Line, range: [number, number], sampleNum: number): L
     return resampledLine;
 }
 
-function resampleLines(lines: Line[], range: [number, number], sampleNum: number): Line[] {
+export function resampleLines(lines: Line[], range: [number, number], sampleNum: number): Line[] {
     const resampledLines: Line[] = [];
     for (let i = 0; i < lines.length; ++i) {
         resampledLines.push(resampleLine(lines[i], range, sampleNum));

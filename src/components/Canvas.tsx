@@ -1,14 +1,14 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-06-22 20:45:34
+ * @LastEditTime: 2022-06-22 21:04:41
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
  */
 import React, { useEffect } from 'react';
 import { ImportamceLine, Line } from '../core/defs/line';
-import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling } from '../core/utils';
+import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines } from '../core/utils';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 
@@ -29,7 +29,7 @@ export default function Canvas(props: CanvasProps) {
         });
 
         if (props.lines.length > 0) {
-            console.log(computeAllMaximalGroups(props.lines, [10, 20], [-1000, 1000], 5));
+            console.log(computeAllMaximalGroups(resampleLines(props.lines, [1, 52], 52), [10, 20], [-1000, 1000], 5));
         }
 
         /*
