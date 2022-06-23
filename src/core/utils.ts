@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-06-22 21:15:42
+ * @LastEditTime: 2022-06-22 22:05:33
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
@@ -48,11 +48,11 @@ function binarySearch(line: Line, x: number): number {
     return mid;
 }
 
-function getYValue(line: Line, x: number): number | null {
+function getYValue(line: Line, x: number): number {
     const [min, max] = [line[0].x, line[line.length - 1].x];
     if (x < min || x > max) {
         // throw new Error(`x value ${x} is out of range [${min}, ${max}]`);
-        return null;
+        return NaN;
     }
     const index = binarySearch(line, x);
     if (index === 0) {

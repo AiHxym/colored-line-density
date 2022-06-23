@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-20 15:13:53
- * @LastEditTime: 2022-06-22 20:44:29
+ * @LastEditTime: 2022-06-23 00:30:07
  * @LastEditors: Yumeng Xue
  * @Description: sweep line algorithm for trend deterction
  * @FilePath: /trend-mixer/src/core/trend-detector.ts
@@ -96,7 +96,7 @@ export function computeAllMaximalGroups(lines: Line[], duration: [number, number
                     support: epsilonConnectedLineSet.length,
                     duration: [minX, epsilonConnectedLineSet[0][indexOfRange - 1].x],
                     range: [minYOfThisLineSet, maxYOfThisLineSet],
-                    distribution: epsilonConnectedLineSet
+                    distribution: epsilonConnectedLineSet.slice()
                 }; // G is a maximal group on time-interval [minX , x'].
                 trends.push(G);
                 trends.push(...computeAllMaximalGroups(epsilonConnectedLineSet.slice(0, minSplitePosition), [epsilonConnectedLineSet[0][indexOfRange].x, maxX], range, epsilon))
@@ -116,9 +116,9 @@ export function computeAllMaximalGroups(lines: Line[], duration: [number, number
         if (!isSplited) {
             const G: Trend = {
                 support: epsilonConnectedLineSet.length,
-                duration: [minX, maxIndex],
+                duration: [minX, maxX],
                 range: [minYOfThisLineSet, maxYOfThisLineSet],
-                distribution: epsilonConnectedLineSet
+                distribution: epsilonConnectedLineSet.slice()
             }; // G is a maximal group on time-interval [minX , x'].
             trends.push(G);
         }
