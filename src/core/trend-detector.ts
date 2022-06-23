@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-20 15:13:53
- * @LastEditTime: 2022-06-23 00:30:07
+ * @LastEditTime: 2022-06-23 16:16:51
  * @LastEditors: Yumeng Xue
  * @Description: sweep line algorithm for trend deterction
  * @FilePath: /trend-mixer/src/core/trend-detector.ts
@@ -60,6 +60,7 @@ export function computeAllMaximalGroups(lines: Line[], duration: [number, number
     }
     //console.log(lastBreak);
     epsilonConnectedLineSets.push(legalLines.slice(lastBreak));
+    //console.log(epsilonConnectedLineSets);
 
 
     // for all epsilon-connected sets
@@ -77,7 +78,6 @@ export function computeAllMaximalGroups(lines: Line[], duration: [number, number
                 if (epsilonConnectedLineSet[i][indexOfRange].y - epsilonConnectedLineSet[i - 1][indexOfRange].y > epsilon) {
                     splitePositions.push(i);
                 }
-
             }
             let minRealSplitProportion = 1.1;
             let minSplitePosition = -1;
@@ -99,8 +99,8 @@ export function computeAllMaximalGroups(lines: Line[], duration: [number, number
                     distribution: epsilonConnectedLineSet.slice()
                 }; // G is a maximal group on time-interval [minX , x'].
                 trends.push(G);
-                trends.push(...computeAllMaximalGroups(epsilonConnectedLineSet.slice(0, minSplitePosition), [epsilonConnectedLineSet[0][indexOfRange].x, maxX], range, epsilon))
-                trends.push(...computeAllMaximalGroups(epsilonConnectedLineSet.slice(minSplitePosition), [epsilonConnectedLineSet[0][indexOfRange].x, maxX], range, epsilon))
+                trends.push(...computeAllMaximalGroups(epsilonConnectedLineSet.slice(0, minSplitePosition), [minX, maxX], range, epsilon))
+                trends.push(...computeAllMaximalGroups(epsilonConnectedLineSet.slice(minSplitePosition), [minX, maxX], range, epsilon))
                 isSplited = true;
                 break;
             }
@@ -122,7 +122,6 @@ export function computeAllMaximalGroups(lines: Line[], duration: [number, number
             }; // G is a maximal group on time-interval [minX , x'].
             trends.push(G);
         }
-
     }
     return trends;
 }

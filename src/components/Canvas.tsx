@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-06-23 00:32:06
+ * @LastEditTime: 2022-06-23 16:40:39
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -29,7 +29,9 @@ export default function Canvas(props: CanvasProps) {
         });
 
         if (props.lines.length > 0) {
-            console.log(computeAllMaximalGroups(resampleLines(props.lines, [1, 52], 52), [25, 30], [-1000, 1000], 100));
+            const groups = computeAllMaximalGroups(resampleLines(props.lines, [1, 52], 52), [15, 17], [-1000, 1000], 0.14285714285713878302086499161305255256);
+            groups.sort((a, b) => b.support - a.support);
+            console.log(groups);
         }
 
         /*
