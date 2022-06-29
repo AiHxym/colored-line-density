@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-06-23 16:40:39
+ * @LastEditTime: 2022-06-29 16:36:01
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -34,16 +34,15 @@ export default function Canvas(props: CanvasProps) {
             console.log(groups);
         }
 
-        /*
         if (lineData.length > 0) {
             const lineDensity = density(
                 // the time series data
                 [lineData],
-                [0, 99, 0, 100],
+                [0, 99, 0, 99],
                 // x binning
                 { start: 0, stop: 1600, step: 1 },
                 // y binning
-                { start: 0, stop: 800, step: 1 },
+                { start: 0, stop: 99, step: 0.12375 },
                 canvas,
                 [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
             );
@@ -51,7 +50,7 @@ export default function Canvas(props: CanvasProps) {
             lineDensity.then((result) => {
                 result.destroy();
             });
-        }*/
+        }
 
     }, [props.lines]);
     return (

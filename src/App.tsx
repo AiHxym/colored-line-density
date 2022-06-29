@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-06-19 20:11:53
+ * @LastEditTime: 2022-06-29 16:27:08
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -45,7 +45,10 @@ function App() {
                     const data = results.data;
                     const groupedData = groupBy(data, 'lineId');
                     const lines: Line[] = [];
-                    console.log(groupedData);
+                    let maxX = -Infinity;
+                    let maxY = -Infinity;
+                    let minX = Infinity;
+                    let minY = Infinity;
                     for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
                       const line: Line = rawLine.map((rawPoint: any) => {
                         return {
@@ -54,6 +57,25 @@ function App() {
                         }
                       })
                       lines.push(line);
+                    }
+                    for (let line of lines) {
+                      for (let point of line) {
+                        if (point.x > maxX) {
+                          maxX = point.x;
+                        } if (point.y > maxY) {
+                          maxY = point.y;
+                        } if (point.x < minX) {
+                          minX = point.x;
+                        } if (point.y < minY) {
+                          minY = point.y;
+                        }
+                      }
+                    }
+                    for (let line of lines) {
+                      for (let point of line) {
+                        point.x = (point.x - minX) / (maxX - minX) * 99;
+                        point.y = (point.y - minY) / (maxY - minY) * 99;
+                      }
                     }
                     setLines(lines);
                   }
