@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-06-29 16:27:08
+ * @LastEditTime: 2022-06-29 19:10:42
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -72,6 +72,7 @@ function App() {
                       }
                     }
                     for (let line of lines) {
+                      line.sort((a, b) => a.x - b.x);
                       for (let point of line) {
                         point.x = (point.x - minX) / (maxX - minX) * 99;
                         point.y = (point.y - minY) / (maxY - minY) * 99;

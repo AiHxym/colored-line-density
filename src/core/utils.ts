@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-06-22 22:05:33
+ * @LastEditTime: 2022-07-03 20:49:27
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
@@ -120,6 +120,22 @@ export function calculateAllLineBandDepth(lines: Line[], ensembleNum: number, ro
 }
 
 export function calculateImportanceLinesWithResampling(lines: Line[], ensembleNum: number, roundNum: number, sampleNum: number): ImportamceLine[] {
+    const min = Math.min(...lines.map(line => line[0].x));
+    const max = Math.max(...lines.map(line => line[line.length - 1].x));
+    const resampledLines = resampleLines(lines, [min, max], sampleNum);
+    const bandDepths = calculateAllLineBandDepth(resampledLines, ensembleNum, roundNum);
+    const importamceLines: ImportamceLine[] = [];
+    for (let i = 0; i < lines.length; ++i) {
+        importamceLines.push({
+            line: resampledLines[i],
+            localImportance: [],
+            globalImportance: bandDepths[i]
+        });
+    }
+    return importamceLines;
+}
+
+export function calculateSegmentedDataDepth(lines: Line[], ensembleNum: number, roundNum: number, sampleNum: number): ImportamceLine[] {
     const min = Math.min(...lines.map(line => line[0].x));
     const max = Math.max(...lines.map(line => line[line.length - 1].x));
     const resampledLines = resampleLines(lines, [min, max], sampleNum);
