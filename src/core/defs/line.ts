@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:56:42
- * @LastEditTime: 2022-06-22 22:05:38
+ * @LastEditTime: 2022-07-05 14:20:56
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/defs/line.ts
@@ -15,4 +15,10 @@ export interface ImportamceLine { // importance line is a line with local import
     line: Line,
     localImportance: Importance[],
     globalImportance: Importance
+}
+
+export interface SegmentedLineDepth {
+    line: Line,
+    segmentedBandDepth: number[],
+    segmentGap: number
 }

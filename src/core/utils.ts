@@ -1,13 +1,13 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-07-03 20:49:27
+ * @LastEditTime: 2022-07-05 15:18:10
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
  */
 
-import { ImportamceLine, Line } from './defs/line';
+import { ImportamceLine, Line, SegmentedLineDepth } from './defs/line';
 
 /**
  * Convert integer to float for shaders.
@@ -135,18 +135,61 @@ export function calculateImportanceLinesWithResampling(lines: Line[], ensembleNu
     return importamceLines;
 }
 
-export function calculateSegmentedDataDepth(lines: Line[], ensembleNum: number, roundNum: number, sampleNum: number): ImportamceLine[] {
+export function calculateAllLineSegmentDataDepth(lines: Line[], ensembleNum: number, roundNum: number, segmentGap: number): number[][] {
+    const segmentedBandDepths: number[][] = [];
+    for (let i = 0; i < lines.length; ++i) {
+        if (lines[i].length <= ensembleNum) {
+            throw new Error(`Ensemble number ${ensembleNum} is too large for line ${i}`);
+        }
+
+        const segmentedBandDepth: number[] = [];
+
+        for (let segmentHead = 0; segmentHead < lines[i].length; segmentHead += segmentGap) {
+            const counter = new Array(segmentGap + 1).fill({ low: Infinity, high: -Infinity });
+            let avgBandDepth = 0;
+
+            for (let roundInx = 0; roundInx < roundNum; ++roundInx) {
+                for (let ensembleIndex = 0; ensembleIndex < ensembleNum; ++ensembleIndex) {
+                    const lineNum = randomInt(0, lines.length - 1);
+                    for (let j = segmentHead; j <= segmentHead + segmentGap && j < lines[i].length; ++j) {
+                        if (lines[lineNum][j].y < counter[j - segmentHead].low) {
+                            counter[j - segmentHead].low = lines[lineNum][j].y;
+                        }
+                        if (lines[lineNum][j].y > counter[j - segmentHead].high) {
+                            counter[j - segmentHead].high = lines[lineNum][j].y;
+                        }
+                    }
+                }
+                let bandDepth = 0;
+                for (let j = segmentHead; j <= segmentHead + segmentGap && j < lines[i].length; ++j) {
+                    if (lines[i][j].y >= counter[j - segmentHead].low && lines[i][j].y <= counter[j - segmentHead].high) {
+                        ++bandDepth;
+                    } else {
+                        bandDepth = 0;
+                        break;
+                    }
+                }
+                avgBandDepth += bandDepth / (segmentGap + 1);
+            }
+            segmentedBandDepth.push(avgBandDepth / roundNum);
+        }
+        segmentedBandDepths.push(segmentedBandDepth);
+    }
+    return segmentedBandDepths;
+}
+
+export function calculateSegmentedDataDepth(lines: Line[], ensembleNum: number, roundNum: number, sampleNum: number, segmentGap: number): SegmentedLineDepth[] {
     const min = Math.min(...lines.map(line => line[0].x));
     const max = Math.max(...lines.map(line => line[line.length - 1].x));
     const resampledLines = resampleLines(lines, [min, max], sampleNum);
-    const bandDepths = calculateAllLineBandDepth(resampledLines, ensembleNum, roundNum);
-    const importamceLines: ImportamceLine[] = [];
+    const segmentedBandDepths = calculateAllLineSegmentDataDepth(resampledLines, ensembleNum, roundNum, segmentGap);
+    const segmentedLineDepths: SegmentedLineDepth[] = [];
     for (let i = 0; i < lines.length; ++i) {
-        importamceLines.push({
+        segmentedLineDepths.push({
             line: resampledLines[i],
-            localImportance: [],
-            globalImportance: bandDepths[i]
+            segmentedBandDepth: segmentedBandDepths[i],
+            segmentGap
         });
     }
-    return importamceLines;
+    return segmentedLineDepths;
 }

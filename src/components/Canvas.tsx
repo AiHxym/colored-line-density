@@ -1,14 +1,14 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-06-29 18:57:49
+ * @LastEditTime: 2022-07-05 17:26:21
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
  */
 import React, { useEffect } from 'react';
-import { ImportamceLine, Line } from '../core/defs/line';
-import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines } from '../core/utils';
+import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
+import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 
@@ -19,14 +19,38 @@ interface CanvasProps {
 export default function Canvas(props: CanvasProps) {
     useEffect(() => {
         const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-        const importanceLines = calculateImportanceLinesWithResampling(props.lines, 2, 10, 100);
-        const lineData: LineData[] = importanceLines.map((importanceLine: ImportamceLine) => {
+        /*
+            const importanceLines = calculateImportanceLinesWithResampling(props.lines, 2, 10, 100);
+            const lineData: LineData[] = importanceLines.map((importanceLine: ImportamceLine) => {
+                return {
+                    xValues: new Float32Array(importanceLine.line.map((point: { x: number, y: number }) => point.x)),
+                    yValues: new Float32Array(importanceLine.line.map((point: { x: number, y: number }) => point.y)),
+                    globalImportance: importanceLine.globalImportance
+                }
+            });
+        */
+
+        const segmentedLineDepths = calculateSegmentedDataDepth(props.lines, 2, 100, 100, 1);
+        const lineData: LineData[] = segmentedLineDepths.map((segmentedLineDepth: SegmentedLineDepth, index: number) => {
             return {
-                xValues: new Float32Array(importanceLine.line.map((point: { x: number, y: number }) => point.x)),
-                yValues: new Float32Array(importanceLine.line.map((point: { x: number, y: number }) => point.y)),
-                globalImportance: importanceLine.globalImportance
+                xValues: new Float32Array(segmentedLineDepth.line.map((point: { x: number, y: number }) => point.x)),
+                yValues: new Float32Array(segmentedLineDepth.line.map((point: { x: number, y: number }) => point.y)),
+                segmentedBandDepth: segmentedLineDepth.segmentedBandDepth,
             }
         });
+
+        const lineIds = new Array(lineData.length).fill(0).map((_, index) => index);
+
+        if (lineData.length > 0) {
+            if (lineData[0].segmentedBandDepth) {
+                for (let i = 0; i < lineData[0].segmentedBandDepth.length; i++) {
+                    lineIds.sort((a, b) => (lineData[a].segmentedBandDepth as number[])[i] - (lineData[b].segmentedBandDepth as number[])[i]);
+
+                }
+            }
+        }
+
+        /*
 
         if (props.lines.length > 0) {
             const groups = computeAllMaximalGroups(resampleLines(props.lines, [1, 52], 52), [15, 17], [-1000, 1000], 0.14285714285713878302086499161305255256);
@@ -51,6 +75,7 @@ export default function Canvas(props: CanvasProps) {
                 result.destroy();
             });
         }
+        */
 
     }, [props.lines]);
     return (

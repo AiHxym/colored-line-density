@@ -20,7 +20,13 @@ export interface LineData {
      * global importance of the line
      */
 
-    globalImportance: number;
+    globalImportance?: number;
+
+    /**
+     * segmented band depth of the line
+     */
+
+    segmentedBandDepth?: number[];
 }
 
 export interface BinConfig {
