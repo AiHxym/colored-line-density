@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-05 17:26:21
+ * @LastEditTime: 2022-07-06 00:21:17
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -30,7 +30,7 @@ export default function Canvas(props: CanvasProps) {
             });
         */
 
-        const segmentedLineDepths = calculateSegmentedDataDepth(props.lines, 2, 100, 100, 1);
+        const segmentedLineDepths = calculateSegmentedDataDepth(props.lines, 2, 1000, 100, 1);
         const lineData: LineData[] = segmentedLineDepths.map((segmentedLineDepth: SegmentedLineDepth, index: number) => {
             return {
                 xValues: new Float32Array(segmentedLineDepth.line.map((point: { x: number, y: number }) => point.x)),
@@ -41,14 +41,28 @@ export default function Canvas(props: CanvasProps) {
 
         const lineIds = new Array(lineData.length).fill(0).map((_, index) => index);
 
+
         if (lineData.length > 0) {
             if (lineData[0].segmentedBandDepth) {
+                const center50PercentLineNum = Math.round(lineData.length / 2);
+                const counter = new Array(lineData[0].xValues.length).fill(0).map(() => ({ low: Infinity, high: -Infinity }));
                 for (let i = 0; i < lineData[0].segmentedBandDepth.length; i++) {
-                    lineIds.sort((a, b) => (lineData[a].segmentedBandDepth as number[])[i] - (lineData[b].segmentedBandDepth as number[])[i]);
+                    lineIds.sort((a, b) => (lineData[b].segmentedBandDepth as number[])[i] - (lineData[a].segmentedBandDepth as number[])[i]);
+                    for (let lineIdIndex = 0; lineIdIndex < center50PercentLineNum; ++lineIdIndex) {
 
+                        if (lineData[lineIds[lineIdIndex]].yValues[i] > counter[i].high) {
+                            counter[i].high = lineData[lineIds[lineIdIndex]].yValues[i];
+                        }
+                        if (lineData[lineIds[lineIdIndex]].yValues[i] < counter[i].low) {
+                            counter[i].low = lineData[lineIds[lineIdIndex]].yValues[i];
+                        }
+                    }
                 }
             }
         }
+
+
+
 
         /*
 
@@ -76,7 +90,6 @@ export default function Canvas(props: CanvasProps) {
             });
         }
         */
-
     }, [props.lines]);
     return (
         <div className="canvas-container">

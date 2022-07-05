@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 14:12:47
- * @LastEditTime: 2022-07-05 15:18:10
+ * @LastEditTime: 2022-07-06 00:20:44
  * @LastEditors: Yumeng Xue
  * @Description: some utils for the program
  * @FilePath: /trend-mixer/src/core/utils.ts
@@ -91,7 +91,7 @@ export function calculateAllLineBandDepth(lines: Line[], ensembleNum: number, ro
         }
         let avgBandDepth = 0;
         for (let round = 0; round < roundNum; ++round) {
-            const counter = new Array(lines[i].length).fill({ low: Infinity, high: -Infinity });
+            const counter = new Array(lines[i].length).fill(0).map(() => ({ low: Infinity, high: -Infinity }));
             for (let ensembleIndex = 0; ensembleIndex < ensembleNum; ++ensembleIndex) {
                 const lineNum = randomInt(0, lines.length - 1);
                 for (let j = 0; j < lines[lineNum].length; ++j) {
@@ -145,13 +145,14 @@ export function calculateAllLineSegmentDataDepth(lines: Line[], ensembleNum: num
         const segmentedBandDepth: number[] = [];
 
         for (let segmentHead = 0; segmentHead < lines[i].length; segmentHead += segmentGap) {
-            const counter = new Array(segmentGap + 1).fill({ low: Infinity, high: -Infinity });
+
             let avgBandDepth = 0;
 
             for (let roundInx = 0; roundInx < roundNum; ++roundInx) {
+                const counter = new Array(segmentGap).fill(0).map(() => ({ low: Infinity, high: -Infinity }));
                 for (let ensembleIndex = 0; ensembleIndex < ensembleNum; ++ensembleIndex) {
                     const lineNum = randomInt(0, lines.length - 1);
-                    for (let j = segmentHead; j <= segmentHead + segmentGap && j < lines[i].length; ++j) {
+                    for (let j = segmentHead; j < segmentHead + segmentGap; ++j) {
                         if (lines[lineNum][j].y < counter[j - segmentHead].low) {
                             counter[j - segmentHead].low = lines[lineNum][j].y;
                         }
@@ -161,7 +162,7 @@ export function calculateAllLineSegmentDataDepth(lines: Line[], ensembleNum: num
                     }
                 }
                 let bandDepth = 0;
-                for (let j = segmentHead; j <= segmentHead + segmentGap && j < lines[i].length; ++j) {
+                for (let j = segmentHead; j < segmentHead + segmentGap; ++j) {
                     if (lines[i][j].y >= counter[j - segmentHead].low && lines[i][j].y <= counter[j - segmentHead].high) {
                         ++bandDepth;
                     } else {
@@ -169,7 +170,7 @@ export function calculateAllLineSegmentDataDepth(lines: Line[], ensembleNum: num
                         break;
                     }
                 }
-                avgBandDepth += bandDepth / (segmentGap + 1);
+                avgBandDepth += bandDepth / segmentGap;
             }
             segmentedBandDepth.push(avgBandDepth / roundNum);
         }
