@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-06 19:23:22
+ * @LastEditTime: 2022-07-06 22:07:07
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -11,6 +11,7 @@ import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
+import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
 
 interface CanvasProps {
@@ -51,10 +52,15 @@ export default function Canvas(props: CanvasProps) {
             if (lineData[0].segmentedBandDepth) {
                 const center50PercentLineNum = Math.round(lineData.length / 2);
                 const counter = new Array(lineData[0].xValues.length).fill(0).map(() => ({ low: Infinity, high: -Infinity }));
+                const center50PercentLineSetVectors =
+                    new Array(lineData[0].xValues.length)
+                        .fill(0)
+                        .map(() => new Array(lineData.length).fill(0));
+
                 for (let i = 0; i < lineData[0].segmentedBandDepth.length; i++) {
                     lineIds.sort((a, b) => (lineData[b].segmentedBandDepth as number[])[i] - (lineData[a].segmentedBandDepth as number[])[i]);
                     for (let lineIdIndex = 0; lineIdIndex < center50PercentLineNum; ++lineIdIndex) {
-
+                        center50PercentLineSetVectors[i][lineIds[lineIdIndex]] = 1;
                         if (lineData[lineIds[lineIdIndex]].yValues[i] > counter[i].high) {
                             counter[i].high = lineData[lineIds[lineIdIndex]].yValues[i];
                         }
@@ -63,9 +69,38 @@ export default function Canvas(props: CanvasProps) {
                         }
                     }
                 }
+
+                const PCAVectors = PCA.getEigenVectors(center50PercentLineSetVectors);
+                const dimReducedData = PCA.computeAdjustedData(center50PercentLineSetVectors, PCAVectors[0], PCAVectors[1], PCAVectors[2]).adjustedData;
+                for (let dim = 0; dim < dimReducedData.length; dim++) {
+                    const dimAvg = dimReducedData[dim].reduce((acc, cur) => acc + cur, 0) / dimReducedData[dim].length;
+                    dimReducedData[dim] = dimReducedData[dim].map(x => x - dimAvg);
+                    const dimMax = Math.max(...dimReducedData[dim]);
+                    const dimMin = Math.min(...dimReducedData[dim]);
+                    dimReducedData[dim] = dimReducedData[dim].map(x => (x - dimMin) / (dimMax - dimMin));
+                }
+                const colorForSegments = new Array(dimReducedData[0].length).fill(0).map((value, index) => [dimReducedData[0][index], dimReducedData[1][index], dimReducedData[2][index]]);
+
+                console.log(colorForSegments);
+
+
+                const defs = plotSvg.append("defs");
+                const gradient = defs.append("linearGradient")
+                    .attr("id", "boxplot-gradient")
+                    .attr("x1", "0%")
+                    .attr("y1", "0%")
+                    .attr("x2", "100%")
+                    .attr("y2", "0%");
+                for (let i = 0; i < colorForSegments.length; i++) {
+                    gradient.append("stop")
+                        .attr("offset", `${i / colorForSegments.length * 100}%`)
+                        .attr("stop-color", `rgb(${colorForSegments[i][0] * 255}, ${colorForSegments[i][1] * 255}, ${colorForSegments[i][2] * 255})`)
+                        .attr("stop-opacity", 1);
+                }
+
                 plotSvg.append("path")
                     .datum(counter)
-                    .attr("fill", "#cce5df")
+                    .attr("fill", "url(#boxplot-gradient)")
                     .attr("stroke", "#69b3a2")
                     .attr("stroke-width", 1.5)
                     .attr("d", d3.area<{ low: number; high: number }>()
