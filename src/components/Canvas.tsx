@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-06 22:07:07
+ * @LastEditTime: 2022-07-08 13:24:54
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -11,6 +11,7 @@ import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
+import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
 
@@ -81,7 +82,50 @@ export default function Canvas(props: CanvasProps) {
                 }
                 const colorForSegments = new Array(dimReducedData[0].length).fill(0).map((value, index) => [dimReducedData[0][index], dimReducedData[1][index], dimReducedData[2][index]]);
 
-                console.log(colorForSegments);
+
+                // KDE Peak Method
+                let oneDimensionalData = PCA.computeAdjustedData(center50PercentLineSetVectors, PCAVectors[0]).adjustedData[0];
+                const dimAvg = oneDimensionalData.reduce((acc, cur) => acc + cur, 0) / dimReducedData.length;
+                oneDimensionalData = oneDimensionalData.map(x => x - dimAvg);
+                const dimMax = Math.max(...oneDimensionalData);
+                const dimMin = Math.min(...oneDimensionalData);
+                oneDimensionalData = oneDimensionalData.map(x => (x - dimMin) / (dimMax - dimMin));
+                const kdeResult = getKDE(oneDimensionalData, 0.1);
+                console.log(oneDimensionalData);
+                console.log(kdeResult);
+
+                const peakRanges: [number, number][] = [];
+
+                for (let peakId of kdeResult.peaks) {
+                    const threshold = kdeResult.estimate[peakId].y / 1.3;
+                    let peakStart = 0;
+                    let peakEnd = kdeResult.estimate.length - 1;
+                    for (let i = peakId - 1; i >= 0; i--) {
+                        if (kdeResult.estimate[i].y < threshold) {
+                            peakStart = i;
+                            break;
+                        }
+                    }
+                    for (let i = peakId + 1; i < kdeResult.estimate.length; i++) {
+                        if (kdeResult.estimate[i].y < threshold) {
+                            peakEnd = i;
+                            break;
+                        }
+                    }
+                    peakRanges.push([peakStart, peakEnd]);
+                }
+
+                const oneDimensionalColor = new Array(oneDimensionalData.length).fill("#A9A9A9");
+                for (let i = 0; i < oneDimensionalData.length; i++) {
+                    for (let peakRangeId = 0; peakRangeId < peakRanges.length; ++peakRangeId) {
+                        if (oneDimensionalData[i] >= kdeResult.estimate[peakRanges[peakRangeId][0]].x && oneDimensionalData[i] <= kdeResult.estimate[peakRanges[peakRangeId][1]].x) {
+                            oneDimensionalColor[i] = d3.schemeCategory10[peakRangeId];
+                        }
+                    }
+                }
+
+
+
 
 
                 const defs = plotSvg.append("defs");
@@ -98,9 +142,24 @@ export default function Canvas(props: CanvasProps) {
                         .attr("stop-opacity", 1);
                 }
 
+                const oneDGradient = defs.append("linearGradient")
+                    .attr("id", "1d-gradient")
+                    .attr("x1", "0%")
+                    .attr("y1", "0%")
+                    .attr("x2", "100%")
+                    .attr("y2", "0%");
+                for (let i = 0; i < oneDimensionalColor.length; ++i) {
+                    oneDGradient.append("stop")
+                        .attr("offset", `${i / oneDimensionalColor.length * 100}%`)
+                        .attr("stop-color", oneDimensionalColor[i])
+                        .attr("stop-opacity", 1);
+                }
+
+
+
                 plotSvg.append("path")
                     .datum(counter)
-                    .attr("fill", "url(#boxplot-gradient)")
+                    .attr("fill", "url(#1d-gradient)")
                     .attr("stroke", "#69b3a2")
                     .attr("stroke-width", 1.5)
                     .attr("d", d3.area<{ low: number; high: number }>()
