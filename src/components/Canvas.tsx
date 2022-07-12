@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-08 13:24:54
+ * @LastEditTime: 2022-07-12 15:55:36
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -100,7 +100,7 @@ export default function Canvas(props: CanvasProps) {
                     const threshold = kdeResult.estimate[peakId].y / 1.3;
                     let peakStart = 0;
                     let peakEnd = kdeResult.estimate.length - 1;
-                    for (let i = peakId - 1; i >= 0; i--) {
+                    for (let i = peakId - 1; i >= 0; --i) {
                         if (kdeResult.estimate[i].y < threshold) {
                             peakStart = i;
                             break;
@@ -155,17 +155,65 @@ export default function Canvas(props: CanvasProps) {
                         .attr("stop-opacity", 1);
                 }
 
+                const counterPoints = counter.map((value, index) => {
+                    return {
+                        x: index / (counter.length - 1) * 1599,
+                        y: 799 - value.low / 99 * 799
+                    }
+                }).concat(counter.map((value, index) => {
+                    return {
+                        x: index / (counter.length - 1) * 1599,
+                        y: 799 - value.high / 99 * 799
+                    }
+                }).reverse());
+                const counterLine = d3.line<{ x: number; y: number }>()
+                    .x((d, index) => d.x)
+                    .y((d, index) => d.y)
+                    .curve(d3.curveBasisClosed);
 
 
-                plotSvg.append("path")
-                    .datum(counter)
+
+                const segmentedCurveBoxplot = plotSvg.append("path")
                     .attr("fill", "url(#1d-gradient)")
                     .attr("stroke", "#69b3a2")
                     .attr("stroke-width", 1.5)
-                    .attr("d", d3.area<{ low: number; high: number }>()
-                        .x((d, index) => index / (counter.length - 1) * 1599)
-                        .y0(d => 799 - d.low / 99 * 799)
-                        .y1(d => 799 - d.high / 99 * 799));
+                    .attr("d", counterLine(counterPoints));
+
+
+
+
+                segmentedCurveBoxplot.on("mousemove", (event: MouseEvent) => {
+                    const mouseX = event.offsetX;
+                    const mouseY = event.offsetY;
+                    const mouseCounter = new Array(lineData[0].xValues.length).fill(0).map(() => ({ low: Infinity, high: -Infinity }));
+                    const segmentId = Math.floor(mouseX / 1599 * (counter.length - 1));
+                    lineIds.sort((a, b) => (lineData[b].segmentedBandDepth as number[])[segmentId] - (lineData[a].segmentedBandDepth as number[])[segmentId]);
+                    for (let lineIdIndex = 0; lineIdIndex < center50PercentLineNum; ++lineIdIndex) {
+                        for (let i = 0; i < mouseCounter.length; ++i) {
+                            if (lineData[lineIds[lineIdIndex]].yValues[i] > mouseCounter[i].high) {
+                                mouseCounter[i].high = lineData[lineIds[lineIdIndex]].yValues[i];
+                            }
+                            if (lineData[lineIds[lineIdIndex]].yValues[i] < mouseCounter[i].low) {
+                                mouseCounter[i].low = lineData[lineIds[lineIdIndex]].yValues[i];
+                            }
+                        }
+                    }
+                    segmentedCurveBoxplot
+                        .datum(mouseCounter)
+                        .attr("fill", oneDimensionalColor[segmentId])
+                        .attr("stroke", "#69b3a2")
+                        .attr("d", d3.area<{ low: number; high: number }>()
+                            .x((d, index) => index / (mouseCounter.length - 1) * 1599)
+                            .y0(d => 799 - d.low / 99 * 799)
+                            .y1(d => 799 - d.high / 99 * 799));
+
+                }).on("mouseout", (event: MouseEvent) => {
+                    segmentedCurveBoxplot
+                        .datum(counter)
+                        .attr("fill", "url(#1d-gradient)")
+                        .attr("stroke", "#69b3a2")
+                        .attr("d", counterLine(counterPoints));
+                });
                 console.log(counter);
             }
         }
