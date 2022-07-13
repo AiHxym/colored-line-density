@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-12 15:55:36
+ * @LastEditTime: 2022-07-13 19:22:49
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -90,14 +90,14 @@ export default function Canvas(props: CanvasProps) {
                 const dimMax = Math.max(...oneDimensionalData);
                 const dimMin = Math.min(...oneDimensionalData);
                 oneDimensionalData = oneDimensionalData.map(x => (x - dimMin) / (dimMax - dimMin));
-                const kdeResult = getKDE(oneDimensionalData, 0.1);
-                console.log(oneDimensionalData);
-                console.log(kdeResult);
+                const kdeResult = getKDE(oneDimensionalData, 0.05);
+                //console.log(oneDimensionalData);
+                //console.log(kdeResult);
 
                 const peakRanges: [number, number][] = [];
 
                 for (let peakId of kdeResult.peaks) {
-                    const threshold = kdeResult.estimate[peakId].y / 1.3;
+                    const threshold = kdeResult.estimate[peakId].y / 1.7;
                     let peakStart = 0;
                     let peakEnd = kdeResult.estimate.length - 1;
                     for (let i = peakId - 1; i >= 0; --i) {
@@ -114,6 +114,8 @@ export default function Canvas(props: CanvasProps) {
                     }
                     peakRanges.push([peakStart, peakEnd]);
                 }
+
+                console.log(peakRanges);
 
                 const oneDimensionalColor = new Array(oneDimensionalData.length).fill("#A9A9A9");
                 for (let i = 0; i < oneDimensionalData.length; i++) {
@@ -174,7 +176,7 @@ export default function Canvas(props: CanvasProps) {
 
 
                 const segmentedCurveBoxplot = plotSvg.append("path")
-                    .attr("fill", "url(#1d-gradient)")
+                    .attr("fill", "url(#boxplot-gradient)")
                     .attr("stroke", "#69b3a2")
                     .attr("stroke-width", 1.5)
                     .attr("d", counterLine(counterPoints));
