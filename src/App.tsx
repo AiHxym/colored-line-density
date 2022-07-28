@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-07-13 19:21:41
+ * @LastEditTime: 2022-07-28 15:08:46
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -23,6 +23,7 @@ const { Option } = Select;
 
 function App() {
   const [lines, setLines] = useState<Line[]>([]);
+  const [lowDimensionalLines, setLowDimensionalLines] = useState<number[][]>([]);
   return (
     <div className="App">
       <Layout>
@@ -33,54 +34,66 @@ function App() {
               accept=".csv"
               showUploadList={false}
               beforeUpload={file => {
-                papa.parse(file, {
-                  header: true,
-                  complete: (results: papa.ParseResult<any>) => {
-                    function groupBy(xs: any[], key: string) {
-                      return xs.reduce(function (rv, x) {
-                        (rv[x[key]] = rv[x[key]] || []).push(x);
-                        return rv;
-                      }, {});
-                    };
-                    const data = results.data;
-                    const groupedData = groupBy(data, 'lineId');
-                    const lines: Line[] = [];
-                    let maxX = -Infinity;
-                    let maxY = -Infinity;
-                    let minX = Infinity;
-                    let minY = Infinity;
-                    for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
-                      const line: Line = rawLine.map((rawPoint: any) => {
-                        return {
-                          x: parseFloat(rawPoint.x),
-                          y: parseFloat(rawPoint.y)
-                        }
-                      })
-                      lines.push(line);
+                const fileName = file.name;
+                if (fileName === "representation.csv") {
+                  papa.parse(file, {
+                    header: false,
+                    complete: (results: papa.ParseResult<any>) => {
+                      const data = results.data;
+                      setLowDimensionalLines(data);
                     }
-                    for (let line of lines) {
-                      for (let point of line) {
-                        if (point.x > maxX) {
-                          maxX = point.x;
-                        } if (point.y > maxY) {
-                          maxY = point.y;
-                        } if (point.x < minX) {
-                          minX = point.x;
-                        } if (point.y < minY) {
-                          minY = point.y;
+                  });
+                } else {
+                  papa.parse(file, {
+                    header: true,
+                    complete: (results: papa.ParseResult<any>) => {
+                      function groupBy(xs: any[], key: string) {
+                        return xs.reduce(function (rv, x) {
+                          (rv[x[key]] = rv[x[key]] || []).push(x);
+                          return rv;
+                        }, {});
+                      };
+                      const data = results.data;
+                      const groupedData = groupBy(data, 'lineId');
+                      const lines: Line[] = [];
+                      let maxX = -Infinity;
+                      let maxY = -Infinity;
+                      let minX = Infinity;
+                      let minY = Infinity;
+                      for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
+                        const line: Line = rawLine.map((rawPoint: any) => {
+                          return {
+                            x: parseFloat(rawPoint.x),
+                            y: parseFloat(rawPoint.y)
+                          }
+                        })
+                        lines.push(line);
+                      }
+                      for (let line of lines) {
+                        for (let point of line) {
+                          if (point.x > maxX) {
+                            maxX = point.x;
+                          } if (point.y > maxY) {
+                            maxY = point.y;
+                          } if (point.x < minX) {
+                            minX = point.x;
+                          } if (point.y < minY) {
+                            minY = point.y;
+                          }
                         }
                       }
-                    }
-                    for (let line of lines) {
-                      line.sort((a, b) => a.x - b.x);
-                      for (let point of line) {
-                        point.x = (point.x - minX) / (maxX - minX) * 99;
-                        point.y = (point.y - minY) / (maxY - minY) * 99;
+                      for (let line of lines) {
+                        line.sort((a, b) => a.x - b.x);
+                        for (let point of line) {
+                          point.x = (point.x - minX) / (maxX - minX) * 99;
+                          point.y = (point.y - minY) / (maxY - minY) * 99;
+                        }
                       }
+                      setLines(lines);
+
                     }
-                    setLines(lines);
-                  }
-                });
+                  });
+                }
                 // Prevent upload
                 return false;
               }}
@@ -91,7 +104,7 @@ function App() {
             </Upload>
           </Sider>
           <Content>
-            <Canvas lines={lines}></Canvas>
+            <Canvas lines={lines} lowDimensionalLines={lowDimensionalLines}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>

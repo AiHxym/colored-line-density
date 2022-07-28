@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-13 19:22:49
+ * @LastEditTime: 2022-07-28 20:48:28
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -9,6 +9,7 @@
 import React, { useEffect } from 'react';
 import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
+import { binning } from '../core/binning';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
@@ -17,6 +18,7 @@ import * as d3 from 'd3';
 
 interface CanvasProps {
     lines: Line[];
+    lowDimensionalLines: number[][];
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -48,6 +50,8 @@ export default function Canvas(props: CanvasProps) {
 
         const lineIds = new Array(lineData.length).fill(0).map((_, index) => index);
 
+        const bins = binning(props.lines, { start: 0, stop: 1000, step: 1 }, { start: 0, stop: 500, step: 1 }, true);
+        console.log(bins);
 
         if (lineData.length > 0) {
             if (lineData[0].segmentedBandDepth) {
