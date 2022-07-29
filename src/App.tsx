@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-07-28 15:08:46
+ * @LastEditTime: 2022-07-29 16:26:39
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -69,6 +69,7 @@ function App() {
                         })
                         lines.push(line);
                       }
+                      /*
                       for (let line of lines) {
                         for (let point of line) {
                           if (point.x > maxX) {
@@ -89,6 +90,7 @@ function App() {
                           point.y = (point.y - minY) / (maxY - minY) * 99;
                         }
                       }
+                      */
                       setLines(lines);
 
                     }

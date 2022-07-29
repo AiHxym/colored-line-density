@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-28 15:56:47
- * @LastEditTime: 2022-07-28 21:34:59
+ * @LastEditTime: 2022-07-29 17:02:23
  * @LastEditors: Yumeng Xue
  * @Description: Binning for lines
  * @FilePath: /trend-mixer/src/core/binning.ts
@@ -24,7 +24,9 @@ interface BinConfig {
     step: number;
 }
 
-export function binning(lines: Line[], binX: BinConfig, binY: BinConfig, normalize: boolean) {
+export type BinningMap = Set<number>[][];
+
+export function binning(lines: Line[], binX: BinConfig, binY: BinConfig, normalize: boolean, normalizeDensity: boolean): BinningMap {
     let processingLines: Line[] = [];
     if (normalize) {
         const minX = Math.min(...lines.map(line => Math.min(...line.map(point => point.x))));
@@ -43,7 +45,7 @@ export function binning(lines: Line[], binX: BinConfig, binY: BinConfig, normali
         processingLines = lines;
     }
 
-    const bins: Set<number>[][] =
+    const bins: BinningMap =
         new Array((binX.stop - binX.start) / binX.step)
             .fill(0)
             .map(() => new Array((binY.stop - binY.start) / binY.step).fill(0).map(() => new Set<number>()));
@@ -55,7 +57,6 @@ export function binning(lines: Line[], binX: BinConfig, binY: BinConfig, normali
             const binTailX = i + binX.step;
             let headInterpolateY = interpolateFunc(binHeadX);
             let tailInterpolateY = interpolateFunc(binTailX);
-            console.log(headInterpolateY, tailInterpolateY);
 
             if (isNaN(headInterpolateY) && isNaN(tailInterpolateY)) {
                 continue;
@@ -65,15 +66,15 @@ export function binning(lines: Line[], binX: BinConfig, binY: BinConfig, normali
                 tailInterpolateY = line[line.length - 1].y;
             }
 
-            for (let j = binY.start; j < binY.stop; j += binY.step) {
-                const binHeadY = j;
-                const binTailY = j + binY.step;
-                if ((headInterpolateY >= binHeadY && headInterpolateY <= binTailY) ||
-                    (tailInterpolateY >= binHeadY && tailInterpolateY <= binTailY) ||
-                    (headInterpolateY < binHeadY && tailInterpolateY > binTailY) ||
-                    (headInterpolateY > binHeadY && tailInterpolateY < binTailY)) {
-                    bins[Math.round((binHeadX - binX.start) / binX.step)][Math.round((binHeadY - binY.start) / binY.step)].add(index);
-                }
+            const topY = Math.max(headInterpolateY, tailInterpolateY);
+            const bottomY = Math.min(headInterpolateY, tailInterpolateY);
+
+            const topBinId = Math.floor((topY - binY.start) / binY.step);
+            const bottomBinId = Math.floor((bottomY - binY.start) / binY.step);
+
+
+            for (let j = bottomBinId; j <= topBinId && bins[0].length; ++j) {
+                bins[Math.round((binHeadX - binX.start) / binX.step)][j].add(index);
             }
         }
     });

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-28 15:33:17
- * @LastEditTime: 2022-07-28 16:21:01
+ * @LastEditTime: 2022-07-29 16:33:06
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/math/interpolation.ts
@@ -32,8 +32,6 @@ export function interpolate1D(dataPoints: { x: number, y: number }[]): (x: numbe
         const index = binarySearch(dataPoints, x);
         if (index === 0) {
             return dataPoints[0].y;
-        } else if (index === dataPoints.length - 1) {
-            return dataPoints[dataPoints.length - 1].y;
         }
         const [prevX, prevY] = [dataPoints[index - 1].x, dataPoints[index - 1].y];
         const [nextX, nextY] = [dataPoints[index].x, dataPoints[index].y];

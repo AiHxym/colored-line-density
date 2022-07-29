@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-28 20:48:28
+ * @LastEditTime: 2022-07-29 19:20:51
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -10,11 +10,13 @@ import React, { useEffect } from 'react';
 import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import { binning } from '../core/binning';
+import { render } from '../core/renderer';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
+import { bin } from 'd3';
 
 interface CanvasProps {
     lines: Line[];
@@ -50,9 +52,52 @@ export default function Canvas(props: CanvasProps) {
 
         const lineIds = new Array(lineData.length).fill(0).map((_, index) => index);
 
-        const bins = binning(props.lines, { start: 0, stop: 1000, step: 1 }, { start: 0, stop: 500, step: 1 }, true);
-        console.log(bins);
+        const bins = binning(props.lines, { start: 0, stop: 1600, step: 1 }, { start: 0, stop: 800, step: 1 }, true, true);
 
+        const representVectors = [];
+
+        if (props.lowDimensionalLines.length > 0) {
+            const minRepresentVector = new Array(props.lowDimensionalLines[0].length).fill(Infinity);
+            const maxRepresentVector = new Array(props.lowDimensionalLines[0].length).fill(-Infinity);
+            for (let i = 0; i < bins.length; ++i) {
+                const representVectorsColumn = [];
+                for (let j = 0; j < bins[i].length; ++j) {
+                    const bin = bins[i][j];
+                    const linesRepresentVectorOfBin: number[][] = [];
+                    bin.forEach(lineId => {
+                        linesRepresentVectorOfBin.push(props.lowDimensionalLines[lineId]);
+                    });
+                    if (linesRepresentVectorOfBin.length > 0) {
+                        const eigenVectors = PCA.getEigenVectors(linesRepresentVectorOfBin);
+                        representVectorsColumn.push(eigenVectors[0].vector);
+                        for (let k = 0; k < minRepresentVector.length; ++k) {
+                            if (eigenVectors[0].vector[k] < minRepresentVector[k]) {
+                                minRepresentVector[k] = eigenVectors[0].vector[k];
+                            }
+                            if (eigenVectors[0].vector[k] > maxRepresentVector[k]) {
+                                maxRepresentVector[k] = eigenVectors[0].vector[k];
+                            }
+                        }
+                    } else {
+                        representVectorsColumn.push([]);
+                    }
+                }
+                for (let j = 0; j < bins[i].length; ++j) {
+                    for (let k = 0; k < representVectorsColumn[j].length; ++k) {
+                        representVectorsColumn[j][k] =
+                            (representVectorsColumn[j][k] - minRepresentVector[k])
+                            / (maxRepresentVector[k] - minRepresentVector[k]);
+                    }
+                }
+                representVectors.push(representVectorsColumn);
+            }
+            console.log(representVectors);
+        }
+
+
+        render(bins, canvas, d3.interpolateBlues, representVectors);
+
+        /*
         if (lineData.length > 0) {
             if (lineData[0].segmentedBandDepth) {
                 const center50PercentLineNum = Math.round(lineData.length / 2);
@@ -221,11 +266,13 @@ export default function Canvas(props: CanvasProps) {
                         .attr("d", counterLine(counterPoints));
                 });
                 console.log(counter);
+                
             }
+            
         }
 
 
-
+        */
 
         /*
 
@@ -234,7 +281,7 @@ export default function Canvas(props: CanvasProps) {
             groups.sort((a, b) => b.support - a.support);
             console.log(groups);
         }
-        */
+        
 
         if (lineData.length > 0) {
             const lineDensity = density(
@@ -253,7 +300,8 @@ export default function Canvas(props: CanvasProps) {
                 result.destroy();
             });
         }
-    }, [props.lines]);
+        */
+    }, [props.lines, props.lowDimensionalLines]);
     return (
         <div className="canvas-container">
             <canvas id="diagram" width="1600" height="800"></canvas>
