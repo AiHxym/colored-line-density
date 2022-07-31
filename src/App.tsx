@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-07-29 16:26:39
+ * @LastEditTime: 2022-08-01 00:35:02
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -24,6 +24,7 @@ const { Option } = Select;
 function App() {
   const [lines, setLines] = useState<Line[]>([]);
   const [lowDimensionalLines, setLowDimensionalLines] = useState<number[][]>([]);
+  const [features, setFeatures] = useState<number[][]>([]);
   return (
     <div className="App">
       <Layout>
@@ -41,6 +42,15 @@ function App() {
                     complete: (results: papa.ParseResult<any>) => {
                       const data = results.data;
                       setLowDimensionalLines(data);
+                    }
+                  });
+                } else if (fileName === "features.csv") {
+                  papa.parse(file, {
+                    header: false,
+                    dynamicTyping: true,
+                    complete: (results: papa.ParseResult<any>) => {
+                      const data = results.data;
+                      setFeatures(data);
                     }
                   });
                 } else {
@@ -106,7 +116,7 @@ function App() {
             </Upload>
           </Sider>
           <Content>
-            <Canvas lines={lines} lowDimensionalLines={lowDimensionalLines}></Canvas>
+            <Canvas lines={lines} lowDimensionalLines={lowDimensionalLines} features={features}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>

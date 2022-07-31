@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-07-29 19:20:51
+ * @LastEditTime: 2022-08-01 00:36:32
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -21,6 +21,7 @@ import { bin } from 'd3';
 interface CanvasProps {
     lines: Line[];
     lowDimensionalLines: number[][];
+    features: number[][];
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -68,6 +69,9 @@ export default function Canvas(props: CanvasProps) {
                         linesRepresentVectorOfBin.push(props.lowDimensionalLines[lineId]);
                     });
                     if (linesRepresentVectorOfBin.length > 0) {
+                        console.log(linesRepresentVectorOfBin);
+                    }
+                    if (linesRepresentVectorOfBin.length > 0) {
                         const eigenVectors = PCA.getEigenVectors(linesRepresentVectorOfBin);
                         representVectorsColumn.push(eigenVectors[0].vector);
                         for (let k = 0; k < minRepresentVector.length; ++k) {
@@ -91,11 +95,34 @@ export default function Canvas(props: CanvasProps) {
                 }
                 representVectors.push(representVectorsColumn);
             }
-            console.log(representVectors);
+            //console.log(representVectors);
         }
 
+        const features: number[][] = structuredClone(props.features);
 
-        render(bins, canvas, d3.interpolateBlues, representVectors);
+        console.log(features);
+
+        if (features.length > 0) {
+            const minFeatureVector = new Array(features[0].length).fill(Infinity);
+            const maxFeatureVector = new Array(features[0].length).fill(-Infinity);
+            for (let k = 0; k < minFeatureVector.length; ++k) {
+                for (let i = 0; i < features.length; ++i) {
+                    if (features[i][k] < minFeatureVector[k]) {
+                        minFeatureVector[k] = features[i][k];
+                    }
+                    if (features[i][k] > maxFeatureVector[k]) {
+                        maxFeatureVector[k] = features[i][k];
+                    }
+                }
+            }
+            for (let i = 0; i < features.length; ++i) {
+                for (let k = 0; k < features[i].length; ++k) {
+                    features[i][k] = (features[i][k] - minFeatureVector[k]) / (maxFeatureVector[k] - minFeatureVector[k]);
+                }
+            }
+        }
+
+        render(bins, canvas, d3.interpolateBlues, representVectors, features);
 
         /*
         if (lineData.length > 0) {
@@ -301,7 +328,7 @@ export default function Canvas(props: CanvasProps) {
             });
         }
         */
-    }, [props.lines, props.lowDimensionalLines]);
+    }, [props.features, props.lines, props.lowDimensionalLines]);
     return (
         <div className="canvas-container">
             <canvas id="diagram" width="1600" height="800"></canvas>
