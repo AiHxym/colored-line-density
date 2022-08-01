@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-28 15:56:47
- * @LastEditTime: 2022-07-29 17:02:23
+ * @LastEditTime: 2022-08-01 20:01:01
  * @LastEditors: Yumeng Xue
  * @Description: Binning for lines
  * @FilePath: /trend-mixer/src/core/binning.ts
@@ -69,11 +69,18 @@ export function binning(lines: Line[], binX: BinConfig, binY: BinConfig, normali
             const topY = Math.max(headInterpolateY, tailInterpolateY);
             const bottomY = Math.min(headInterpolateY, tailInterpolateY);
 
-            const topBinId = Math.floor((topY - binY.start) / binY.step);
-            const bottomBinId = Math.floor((bottomY - binY.start) / binY.step);
+            let topBinId = Math.floor((topY - binY.start) / binY.step);
+            let bottomBinId = Math.floor((bottomY - binY.start) / binY.step);
 
+            if ((topY - binY.start) / binY.step - topBinId < 1e-6) {
+                --topBinId;
+            }
+            if (bottomBinId < 0) {
+                bottomBinId = 0;
+            }
+            //console.log(bottomBinId, topBinId);
 
-            for (let j = bottomBinId; j <= topBinId && bins[0].length; ++j) {
+            for (let j = bottomBinId; j <= topBinId; ++j) {
                 bins[Math.round((binHeadX - binX.start) / binX.step)][j].add(index);
             }
         }
