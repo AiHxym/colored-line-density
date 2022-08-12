@@ -1,12 +1,12 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-08-01 00:36:32
+ * @LastEditTime: 2022-08-12 17:48:31
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import { binning } from '../core/binning';
@@ -16,7 +16,9 @@ import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
-import { bin } from 'd3';
+import { bin, greatestIndex } from 'd3';
+
+
 
 interface CanvasProps {
     lines: Line[];
@@ -25,6 +27,11 @@ interface CanvasProps {
 }
 
 export default function Canvas(props: CanvasProps) {
+
+    const [isMouseDown, setIsMouseDown] = useState(false);
+    const [strokeWidth, setStrokeWidth] = useState(3);
+    const [strokePickedGrid, setStrokePickedGrid] = useState<Set<[number, number]>>(new Set());
+
     useEffect(() => {
         const canvas = document.getElementById('diagram') as HTMLCanvasElement;
 
@@ -100,8 +107,6 @@ export default function Canvas(props: CanvasProps) {
 
         const features: number[][] = structuredClone(props.features);
 
-        console.log(features);
-
         if (features.length > 0) {
             const minFeatureVector = new Array(features[0].length).fill(Infinity);
             const maxFeatureVector = new Array(features[0].length).fill(-Infinity);
@@ -122,7 +127,7 @@ export default function Canvas(props: CanvasProps) {
             }
         }
 
-        render(bins, canvas, d3.interpolateBlues, representVectors, features);
+        render(bins, canvas, d3.interpolateMagma, representVectors, features);
 
         /*
         if (lineData.length > 0) {
@@ -331,12 +336,44 @@ export default function Canvas(props: CanvasProps) {
     }, [props.features, props.lines, props.lowDimensionalLines]);
     return (
         <div className="canvas-container">
-            <canvas id="diagram" width="1600" height="800"></canvas>
-            <svg id="plots" style={{
+            <canvas id="diagram" width="1600" height="800"
+                onMouseDown={(event) => {
+                    setIsMouseDown(true);
+                }}
+                onMouseMove={(event) => {
+                    if (isMouseDown) {
+                        const pickedGrid = new Set<[number, number]>();
+                        const mouseX = event.nativeEvent.offsetX;
+                        const mouseY = event.nativeEvent.offsetY;
+                        const mouseGridX = Math.floor(mouseX / 1);
+                        const mouseGridY = Math.floor(mouseY / 1);
+                        for (let i = mouseGridX - Math.floor(strokeWidth / 2); i <= mouseGridX + Math.floor(strokeWidth / 2); ++i) {
+                            for (let j = mouseGridY - Math.floor(strokeWidth / 2); j <= mouseGridY + Math.floor(strokeWidth / 2); ++j) {
+                                if (i >= 0 && i < 1600 && j >= 0 && j < 800) {
+                                    pickedGrid.add([i, j]);
+                                }
+                            }
+                        }
+                        setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
+                    }
+                }}
+                onMouseUp={(event) => {
+                    setIsMouseDown(false);
+                    console.log(strokePickedGrid);
+                    setStrokePickedGrid(new Set());
+                }}></canvas>
+            {/*<svg id="plots" style={{
                 position: 'relative',
                 top: '-806px',
                 width: '1600px',
                 height: '800px'
+            }}></svg>*/}
+            <svg id="interaction-renderer" style={{
+                position: 'relative',
+                top: '-806px',
+                width: '1600px',
+                height: '800px',
+                pointerEvents: 'none'
             }}></svg>
         </div>
     );

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-08-05 14:55:51
+ * @LastEditTime: 2022-08-11 15:44:59
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -102,6 +102,7 @@ function App() {
                         }
                       }
                       */
+                      console.log(lines);
                       setLines(lines);
 
                     }
