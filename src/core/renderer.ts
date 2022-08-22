@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-08-11 18:21:52
+ * @LastEditTime: 2022-08-22 14:46:47
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -82,4 +82,28 @@ export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t
         }
     }
 
+}
+
+export function renderExtra(bins: BinningMap, canvas: HTMLCanvasElement, gridCoordinates: Set<string>, gridColors: number[][]): void {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        throw new Error("Failed to get canvas context");
+    }
+
+    const maxDensityValue = Math.max(...bins.map(binColumn => Math.max(...binColumn.map(bin => bin.size))));
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const binWidth = width / bins.length;
+    const binHeight = height / bins[0].length;
+    //ctx.scale(1, -1);
+    for (let [index, gridCoordinate] of [...gridCoordinates].entries()) {
+        const [i, j] = gridCoordinate.split(",").map(Number);
+        const bin = bins[i][j];
+        const binX = i * binWidth;
+        const binY = (bins[i].length - j) * binHeight;
+        const binColor = gridColors.map(dimension => dimension[index]);
+        ctx.fillStyle = "rgb(" + binColor.map(c => c * 255 * (bin.size / maxDensityValue * 0.3 + 0.7) * 2).join(",") + ")";
+        ctx.fillRect(binX, binY, binWidth, binHeight);
+    }
 }

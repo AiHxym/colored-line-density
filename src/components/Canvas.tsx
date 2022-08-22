@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-08-12 17:48:31
+ * @LastEditTime: 2022-08-22 14:51:51
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -9,8 +9,8 @@
 import React, { useEffect, useState } from 'react';
 import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
-import { binning } from '../core/binning';
-import { render } from '../core/renderer';
+import { binning, BinningMap } from '../core/binning';
+import { render, renderExtra } from '../core/renderer';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
@@ -29,8 +29,38 @@ interface CanvasProps {
 export default function Canvas(props: CanvasProps) {
 
     const [isMouseDown, setIsMouseDown] = useState(false);
-    const [strokeWidth, setStrokeWidth] = useState(3);
-    const [strokePickedGrid, setStrokePickedGrid] = useState<Set<[number, number]>>(new Set());
+    const [strokeWidth, setStrokeWidth] = useState(29);
+    const [strokePickedGrid, setStrokePickedGrid] = useState<Set<string>>(new Set());
+    const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
+
+    const pickedGrid = new Set<string>();
+
+    useEffect(() => {
+        const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+        if (strokePickedGrid.size > 0) {
+            const lineIdVectors = [];
+            for (let girdCoordinates of strokePickedGrid) {
+                const lineIdVector = new Array(props.lines.length).fill(0);
+                const [x, y] = girdCoordinates.split(',').map(Number);
+                for (let lineId of binsInfo[x][y]) {
+                    lineIdVector[lineId] = 1;
+                }
+                lineIdVectors.push(lineIdVector);
+            }
+            console.log(lineIdVectors);
+            const eigenVectors = PCA.getEigenVectors(lineIdVectors);
+            const dimReducedData = PCA.computeAdjustedData(lineIdVectors, eigenVectors[0], eigenVectors[1], eigenVectors[2]).adjustedData;
+            for (let dimension of dimReducedData) {
+                const maxNumber = Math.max(...dimension);
+                const minNumber = Math.min(...dimension);
+                for (let i = 0; i < dimension.length; i++) {
+                    dimension[i] = (dimension[i] - minNumber) / (maxNumber - minNumber);
+                }
+            }
+            console.log(dimReducedData);
+            renderExtra(binsInfo, canvas, strokePickedGrid, dimReducedData);
+        }
+    }, [binsInfo, props.lines.length, strokePickedGrid]);
 
     useEffect(() => {
         const canvas = document.getElementById('diagram') as HTMLCanvasElement;
@@ -61,6 +91,7 @@ export default function Canvas(props: CanvasProps) {
         const lineIds = new Array(lineData.length).fill(0).map((_, index) => index);
 
         const bins = binning(props.lines, { start: 0, stop: 1600, step: 1 }, { start: 0, stop: 800, step: 1 }, true, true);
+        setBinsInfo(bins);
 
         const representVectors = [];
 
@@ -334,6 +365,7 @@ export default function Canvas(props: CanvasProps) {
         }
         */
     }, [props.features, props.lines, props.lowDimensionalLines]);
+
     return (
         <div className="canvas-container">
             <canvas id="diagram" width="1600" height="800"
@@ -342,7 +374,6 @@ export default function Canvas(props: CanvasProps) {
                 }}
                 onMouseMove={(event) => {
                     if (isMouseDown) {
-                        const pickedGrid = new Set<[number, number]>();
                         const mouseX = event.nativeEvent.offsetX;
                         const mouseY = event.nativeEvent.offsetY;
                         const mouseGridX = Math.floor(mouseX / 1);
@@ -350,17 +381,16 @@ export default function Canvas(props: CanvasProps) {
                         for (let i = mouseGridX - Math.floor(strokeWidth / 2); i <= mouseGridX + Math.floor(strokeWidth / 2); ++i) {
                             for (let j = mouseGridY - Math.floor(strokeWidth / 2); j <= mouseGridY + Math.floor(strokeWidth / 2); ++j) {
                                 if (i >= 0 && i < 1600 && j >= 0 && j < 800) {
-                                    pickedGrid.add([i, j]);
+                                    pickedGrid.add(i + ',' + (799 - j));
                                 }
                             }
                         }
-                        setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
                     }
                 }}
                 onMouseUp={(event) => {
                     setIsMouseDown(false);
-                    console.log(strokePickedGrid);
-                    setStrokePickedGrid(new Set());
+                    setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
+                    pickedGrid.clear();
                 }}></canvas>
             {/*<svg id="plots" style={{
                 position: 'relative',
