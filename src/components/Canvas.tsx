@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-08-22 14:51:51
+ * @LastEditTime: 2022-09-06 15:48:36
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -16,7 +16,7 @@ import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
-import { bin, greatestIndex } from 'd3';
+import { bin, cluster, greatestIndex } from 'd3';
 
 
 
@@ -24,6 +24,7 @@ interface CanvasProps {
     lines: Line[];
     lowDimensionalLines: number[][];
     features: number[][];
+    clusters: number[];
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -158,7 +159,7 @@ export default function Canvas(props: CanvasProps) {
             }
         }
 
-        render(bins, canvas, d3.interpolateMagma, representVectors, features);
+        render(bins, canvas, d3.interpolateMagma, representVectors, features, props.clusters);
 
         /*
         if (lineData.length > 0) {

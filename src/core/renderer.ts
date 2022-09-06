@@ -1,12 +1,13 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-08-22 14:46:47
+ * @LastEditTime: 2022-09-06 15:53:35
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
  */
 import { BinningMap } from "./binning";
+import * as d3 from "d3";
 
 function rgb2hsl(r: number, g: number, b: number): [number, number, number] {
     // get the min and max of r,g,b
@@ -45,7 +46,9 @@ function rgb2hsl(r: number, g: number, b: number): [number, number, number] {
 }
 
 
-export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t: number) => string, representVectors: number[][][], features: number[][]): void {
+export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t: number) => string, representVectors: number[][][], features: number[][], clusters: number[]): void {
+
+    const clusterColormaps = [d3.interpolateGreys, d3.interpolateBlues, d3.interpolateGreens, d3.interpolateOranges, d3.interpolatePurples, d3.interpolateReds];
     const ctx = canvas.getContext("2d");
     if (!ctx) {
         throw new Error("Failed to get canvas context");
@@ -75,6 +78,12 @@ export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t
                 const color = features[i * bins[0].length + j];
                 //console.log(i, j);
                 binColor = "rgb(" + features[i * bins[0].length + j].map(c => c * 255 * (bin.size / maxDensityValue * 0.3 + 0.7) * 2).join(",") + ")";
+                //binColor = "hsl(" + rgb2hsl(color[0], color[1], color[2])[0] + `, ${bin.size / maxDensityValue * 100}%, 50%)`;
+            }
+            if (clusters.length > 0 && clusters[i * bins[0].length + j] !== undefined) {
+                const cluster = clusters[i * bins[0].length + j];
+                //console.log(i, j);
+                binColor = clusterColormaps[Math.round(cluster)](bin.size / maxDensityValue);
                 //binColor = "hsl(" + rgb2hsl(color[0], color[1], color[2])[0] + `, ${bin.size / maxDensityValue * 100}%, 50%)`;
             }
             ctx.fillStyle = binColor;
