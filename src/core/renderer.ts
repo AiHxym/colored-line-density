@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-09-06 15:53:35
+ * @LastEditTime: 2022-09-14 18:02:31
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -48,7 +48,7 @@ function rgb2hsl(r: number, g: number, b: number): [number, number, number] {
 
 export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t: number) => string, representVectors: number[][][], features: number[][], clusters: number[]): void {
 
-    const clusterColormaps = [d3.interpolateGreys, d3.interpolateBlues, d3.interpolateGreens, d3.interpolateOranges, d3.interpolatePurples, d3.interpolateReds];
+    const clusterColormaps = [d3.interpolateBlues, d3.interpolateGreens, d3.interpolateOranges, d3.interpolatePurples, d3.interpolateReds, d3.interpolateGreys];
     const ctx = canvas.getContext("2d");
     if (!ctx) {
         throw new Error("Failed to get canvas context");
@@ -75,12 +75,23 @@ export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t
             }
 
             if (features.length > 0 && bin.size > 0 && features[i * bins[0].length + j]) {
-                const color = features[i * bins[0].length + j];
+                const feature = features[i * bins[0].length + j];
                 //console.log(i, j);
-                binColor = "rgb(" + features[i * bins[0].length + j].map(c => c * 255 * (bin.size / maxDensityValue * 0.3 + 0.7) * 2).join(",") + ")";
+                //binColor = "rgb(" + features[i * bins[0].length + j].map(c => c * 255 * (bin.size / maxDensityValue * 0.3 + 0.7) * 2).join(",") + ")";
                 //binColor = "hsl(" + rgb2hsl(color[0], color[1], color[2])[0] + `, ${bin.size / maxDensityValue * 100}%, 50%)`;
+                const mixed_rgb = [0, 0, 0];
+                for (let i in feature) {
+                    const color = clusterColormaps[parseInt(i)](bin.size / maxDensityValue);
+                    const rgb = color.substring(4, color.length - 1)
+                        .replace(/ /g, '')
+                        .split(',');
+                    for (let j in rgb) {
+                        mixed_rgb[j] += parseInt(rgb[j]) * feature[i];
+                    }
+                }
+                binColor = "rgb(" + mixed_rgb.join(",") + ")";
             }
-            if (clusters.length > 0 && clusters[i * bins[0].length + j] !== undefined) {
+            if (clusters.length > 0 && clusters[i * bins[0].length + j] !== undefined && bin.size > 0) {
                 const cluster = clusters[i * bins[0].length + j];
                 //console.log(i, j);
                 binColor = clusterColormaps[Math.round(cluster)](bin.size / maxDensityValue);

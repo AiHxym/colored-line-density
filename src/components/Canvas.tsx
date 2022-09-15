@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-09-06 15:48:36
+ * @LastEditTime: 2022-09-14 17:34:21
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -139,6 +139,7 @@ export default function Canvas(props: CanvasProps) {
 
         const features: number[][] = structuredClone(props.features);
 
+        /*
         if (features.length > 0) {
             const minFeatureVector = new Array(features[0].length).fill(Infinity);
             const maxFeatureVector = new Array(features[0].length).fill(-Infinity);
@@ -158,7 +159,7 @@ export default function Canvas(props: CanvasProps) {
                 }
             }
         }
-
+        */
         render(bins, canvas, d3.interpolateMagma, representVectors, features, props.clusters);
 
         /*
