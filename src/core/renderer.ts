@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-09-14 18:02:31
+ * @LastEditTime: 2022-09-23 17:26:52
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -94,7 +94,7 @@ export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t
             if (clusters.length > 0 && clusters[i * bins[0].length + j] !== undefined && bin.size > 0) {
                 const cluster = clusters[i * bins[0].length + j];
                 //console.log(i, j);
-                binColor = clusterColormaps[Math.round(cluster)](bin.size / maxDensityValue);
+                binColor = clusterColormaps[Math.round(cluster)](bin.size / maxDensityValue * 0.8 + 0.2);
                 //binColor = "hsl(" + rgb2hsl(color[0], color[1], color[2])[0] + `, ${bin.size / maxDensityValue * 100}%, 50%)`;
             }
             ctx.fillStyle = binColor;
