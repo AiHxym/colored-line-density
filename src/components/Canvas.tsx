@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-09-14 17:34:21
+ * @LastEditTime: 2022-10-07 21:08:38
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -33,9 +33,12 @@ export default function Canvas(props: CanvasProps) {
     const [strokeWidth, setStrokeWidth] = useState(29);
     const [strokePickedGrid, setStrokePickedGrid] = useState<Set<string>>(new Set());
     const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
+    const [clusterLabls, setClusterLabels] = useState<number[][]>([]);
 
     const pickedGrid = new Set<string>();
 
+
+    /*
     useEffect(() => {
         const canvas = document.getElementById('diagram') as HTMLCanvasElement;
         if (strokePickedGrid.size > 0) {
@@ -62,6 +65,7 @@ export default function Canvas(props: CanvasProps) {
             renderExtra(binsInfo, canvas, strokePickedGrid, dimReducedData);
         }
     }, [binsInfo, props.lines.length, strokePickedGrid]);
+    */
 
     useEffect(() => {
         const canvas = document.getElementById('diagram') as HTMLCanvasElement;
@@ -366,7 +370,7 @@ export default function Canvas(props: CanvasProps) {
             });
         }
         */
-    }, [props.features, props.lines, props.lowDimensionalLines]);
+    }, [props.features, props.lines]);
 
     return (
         <div className="canvas-container">
@@ -375,6 +379,7 @@ export default function Canvas(props: CanvasProps) {
                     setIsMouseDown(true);
                 }}
                 onMouseMove={(event) => {
+                    /*
                     if (isMouseDown) {
                         const mouseX = event.nativeEvent.offsetX;
                         const mouseY = event.nativeEvent.offsetY;
@@ -387,12 +392,14 @@ export default function Canvas(props: CanvasProps) {
                                 }
                             }
                         }
-                    }
+                    }*/
                 }}
                 onMouseUp={(event) => {
                     setIsMouseDown(false);
+                    /*
                     setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
                     pickedGrid.clear();
+                    */
                 }}></canvas>
             {/*<svg id="plots" style={{
                 position: 'relative',
