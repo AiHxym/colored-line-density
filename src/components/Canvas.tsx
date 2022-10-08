@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-10-07 21:08:38
+ * @LastEditTime: 2022-10-08 21:39:37
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -17,6 +17,7 @@ import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
 import { bin, cluster, greatestIndex } from 'd3';
+import kmeans from '../core/kmeans';
 
 
 
@@ -34,6 +35,7 @@ export default function Canvas(props: CanvasProps) {
     const [strokePickedGrid, setStrokePickedGrid] = useState<Set<string>>(new Set());
     const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
     const [clusterLabls, setClusterLabels] = useState<number[][]>([]);
+    const [clickPoint, setClickPoint] = useState<[number, number] | null>(null);
 
     const pickedGrid = new Set<string>();
 
@@ -98,6 +100,9 @@ export default function Canvas(props: CanvasProps) {
         const bins = binning(props.lines, { start: 0, stop: 1600, step: 1 }, { start: 0, stop: 800, step: 1 }, true, true);
         setBinsInfo(bins);
 
+        setClusterLabels(new Array(bins.length).fill(0).map((_, index) => new Array(bins[index].length).fill(0)));
+
+
         const representVectors = [];
 
         if (props.lowDimensionalLines.length > 0) {
@@ -141,7 +146,8 @@ export default function Canvas(props: CanvasProps) {
             //console.log(representVectors);
         }
 
-        const features: number[][] = structuredClone(props.features);
+        //const features: number[][] = structuredClone(props.features);
+
 
         /*
         if (features.length > 0) {
@@ -164,7 +170,8 @@ export default function Canvas(props: CanvasProps) {
             }
         }
         */
-        render(bins, canvas, d3.interpolateMagma, representVectors, features, props.clusters);
+        //render(bins, canvas, d3.interpolateMagma, representVectors, features, props.clusters);
+        //render(bins, canvas, d3.interpolateMagma, representVectors, [], clusterLabls.flat());
 
         /*
         if (lineData.length > 0) {
@@ -370,7 +377,45 @@ export default function Canvas(props: CanvasProps) {
             });
         }
         */
-    }, [props.features, props.lines]);
+    }, [props.features, props.lines, props.lowDimensionalLines]);
+
+    useEffect(() => {
+        if (clickPoint) {
+            const selectedClusterId = clusterLabls[clickPoint[0]][clickPoint[1]];
+            let maxClusterId = clusterLabls[0][0];
+            for (let i = 1; i < clusterLabls.length; ++i) {
+                for (let j = 1; j < clusterLabls[i].length; ++j) {
+                    if (clusterLabls[i][j] > maxClusterId) {
+                        maxClusterId = clusterLabls[i][j];
+                    }
+                }
+            }
+            const selectedCluster: { x: number; y: number; feature: number[] }[] = [];
+            for (let i = 0; i < clusterLabls.length; ++i) {
+                for (let j = 0; j < clusterLabls[i].length; ++j) {
+                    //if (clusterLabls[i][j] === selectedClusterId) {
+                    selectedCluster.push({ x: i, y: j, feature: props.features[i * props.features[0].length + j] });
+                    //}
+                }
+            }
+            console.log(selectedCluster);
+            const clusteringResult = kmeans(selectedCluster.map(v => v.feature), maxClusterId + 2);
+            console.log(clusteringResult);
+            const newClusterLabls: number[][] = structuredClone(clusterLabls);
+            for (let i = 0; i < selectedCluster.length; ++i) {
+                newClusterLabls[selectedCluster[i].x][selectedCluster[i].y] = clusteringResult.indexes[i];
+            }
+            setClusterLabels(newClusterLabls)
+        }
+    }, [clickPoint, props.features, binsInfo]);
+
+    useEffect(() => {
+        if (clusterLabls.length > 0 && binsInfo.length > 0) {
+            console.log(clusterLabls);
+            const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+            render(binsInfo, canvas, d3.interpolateMagma, [], [], clusterLabls.flat());
+        }
+    }, [binsInfo, clusterLabls]);
 
     return (
         <div className="canvas-container">
@@ -400,6 +445,11 @@ export default function Canvas(props: CanvasProps) {
                     setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
                     pickedGrid.clear();
                     */
+                }}
+                onClick={(event) => {
+                    const mouseX = event.nativeEvent.offsetX;
+                    const mouseY = event.nativeEvent.offsetY;
+                    setClickPoint([mouseX, mouseY]);
                 }}></canvas>
             {/*<svg id="plots" style={{
                 position: 'relative',
