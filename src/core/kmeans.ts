@@ -250,3 +250,65 @@ class Distance {
     }
 }
 export { Cluster, Distance };
+
+export function silhouetteScore(clusteringResult: KMeans, selectedCluster: { x: number; y: number; feature: number[] }[]) {
+    let avgScore = 0;
+    const clusterPointNumber = new Array(clusteringResult.k).fill(0);
+
+    for (let i = 0; i < clusteringResult.indexes.length; i++) {
+        const clusterIndex = clusteringResult.indexes[i];
+        ++clusterPointNumber[clusterIndex];
+    }
+
+    for (let pointIndex = 0; pointIndex < selectedCluster.length; ++pointIndex) {
+        const intraInterDissimilarity = new Array(clusteringResult.k).fill(0);
+        const pointClusterIndex = clusteringResult.indexes[pointIndex];
+        for (let otherPointIndex = 0; otherPointIndex < selectedCluster.length; ++otherPointIndex) {
+            const otherPointClusterIndex = clusteringResult.indexes[otherPointIndex];
+            const distance = Distance.euclideanDist(selectedCluster[pointIndex].feature, selectedCluster[otherPointIndex].feature);
+            if (pointClusterIndex === otherPointClusterIndex && pointIndex !== otherPointIndex) {
+                intraInterDissimilarity[pointClusterIndex] += distance;
+            } else {
+                intraInterDissimilarity[otherPointClusterIndex] += distance;
+            }
+        }
+        const intraDissimilarity = intraInterDissimilarity[pointClusterIndex] / (clusterPointNumber[pointClusterIndex] - 1);
+        for (let i = 0; i < intraInterDissimilarity.length; ++i) {
+            if (i !== pointClusterIndex) {
+                intraInterDissimilarity[i] /= clusterPointNumber[i];
+            }
+        }
+        const minInterDissimilarity = Math.min(...intraInterDissimilarity.filter((value, index) => index !== pointClusterIndex));
+        const score = (minInterDissimilarity - intraDissimilarity) / Math.max(minInterDissimilarity, intraDissimilarity);
+        avgScore += score;
+    }
+    return avgScore / selectedCluster.length;
+}
+
+export function quickSilhouetteScore(clusteringResult: KMeans, selectedCluster: { x: number; y: number; feature: number[] }[]) {
+    let avgScore = 0;
+    const clusterPointNumber = new Array(clusteringResult.k).fill(0);
+
+    for (let i = 0; i < clusteringResult.indexes.length; i++) {
+        const clusterIndex = clusteringResult.indexes[i];
+        ++clusterPointNumber[clusterIndex];
+    }
+
+    for (let pointIndex = 0; pointIndex < selectedCluster.length; ++pointIndex) {
+        const intraInterDissimilarity = new Array(clusteringResult.k).fill(0);
+        const pointClusterIndex = clusteringResult.indexes[pointIndex];
+        for (let centroidIndex = 0; centroidIndex < clusteringResult.centroids.length; ++centroidIndex) {
+            const distance = Distance.euclideanDist(selectedCluster[pointIndex].feature, clusteringResult.centroids[centroidIndex]);
+            if (pointClusterIndex === centroidIndex) {
+                intraInterDissimilarity[pointClusterIndex] = distance;
+            } else {
+                intraInterDissimilarity[centroidIndex] = distance;
+            }
+        }
+        const intraDissimilarity = intraInterDissimilarity[pointClusterIndex];
+        const minInterDissimilarity = Math.min(...intraInterDissimilarity.filter((value, index) => index !== pointClusterIndex));
+        const score = (minInterDissimilarity - intraDissimilarity) / Math.max(minInterDissimilarity, intraDissimilarity);
+        avgScore += score;
+    }
+    return avgScore / selectedCluster.length;
+}

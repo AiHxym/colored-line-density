@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-10-09 19:14:20
+ * @LastEditTime: 2022-10-09 23:33:34
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -17,7 +17,7 @@ import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
 import { bin, cluster, greatestIndex } from 'd3';
-import kmeans from '../core/kmeans';
+import kmeans, { Distance, quickSilhouetteScore } from '../core/kmeans';
 
 
 
@@ -36,6 +36,7 @@ export default function Canvas(props: CanvasProps) {
     const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
     const [clusterLabls, setClusterLabels] = useState<number[][]>([]);
     const [clickPoint, setClickPoint] = useState<[number, number] | null>(null);
+    const [maxDenstyValue, setMaxDensityValue] = useState<number>(0);
 
     const pickedGrid = new Set<string>();
 
@@ -98,6 +99,7 @@ export default function Canvas(props: CanvasProps) {
         const lineIds = new Array(lineData.length).fill(0).map((_, index) => index);
 
         const bins = binning(props.lines, { start: 0, stop: 1600, step: 1 }, { start: 0, stop: 800, step: 1 }, true, true);
+        setMaxDensityValue(Math.max(...bins.map(binColumn => Math.max(...binColumn.map(bin => bin.size)))));
         setBinsInfo(bins);
 
         setClusterLabels(new Array(bins.length).fill(0).map((_, index) => new Array(bins[index].length).fill(0)));
@@ -393,21 +395,58 @@ export default function Canvas(props: CanvasProps) {
             const selectedCluster: { x: number; y: number; feature: number[] }[] = [];
             for (let i = 0; i < clusterLabls.length; ++i) {
                 for (let j = 0; j < clusterLabls[i].length; ++j) {
-                    if (clusterLabls[i][j] === selectedClusterId) {
+                    if (clusterLabls[i][j] === selectedClusterId && binsInfo[i][j].size / maxDenstyValue > 0.01) {
                         selectedCluster.push({ x: i, y: j, feature: props.features[i * clusterLabls[i].length + j] });
                     }
                 }
             }
             console.log(selectedCluster);
-            const clusteringResult = kmeans(selectedCluster.map(v => v.feature), 2, "kmeans++");
+
+            const silhouetteScores = [];
+            for (let i = 2; i < 5; ++i) {
+                const KR = kmeans(selectedCluster.map(v => v.feature), i);
+                silhouetteScores.push(quickSilhouetteScore(KR, selectedCluster));
+            }
+            const properK = silhouetteScores.indexOf(Math.max(...silhouetteScores)) + 2;
+            const clusteringResult = kmeans(selectedCluster.map(v => v.feature), properK, "kmeans++");
+
+            const clickPointFeature = props.features[clickPoint[0] * clusterLabls[0].length + 799 - clickPoint[1]];
+            let minDistanceToClickPoint = Infinity;
+            let minDistanceToClickPointClusterId = -1;
+            for (let i = 0; i < clusteringResult.centroids.length; ++i) {
+                const distance = Distance.euclideanDist(clickPointFeature, clusteringResult.centroids[i]);
+                if (distance < minDistanceToClickPoint) {
+                    minDistanceToClickPoint = distance;
+                    minDistanceToClickPointClusterId = i;
+                }
+            }
+
             console.log(clusteringResult);
             const newClusterLabls: number[][] = structuredClone(clusterLabls);
-            for (let i = 0; i < selectedCluster.length; ++i) {
-                newClusterLabls[selectedCluster[i].x][selectedCluster[i].y] = clusteringResult.indexes[i] === 0 ? selectedClusterId : maxClusterId + 1;
+            for (let i = 0; i < clusterLabls.length; ++i) {
+                for (let j = 0; j < clusterLabls[i].length; ++j) {
+                    if (clusterLabls[i][j] === selectedClusterId) {
+                        let minDistanceToPoint = Infinity;
+                        let minDistanceToPointClusterId = -1;
+                        for (let k = 0; k < clusteringResult.centroids.length; ++k) {
+                            const distance = Distance.euclideanDist(props.features[i * clusterLabls[i].length + j], clusteringResult.centroids[k]);
+                            if (distance < minDistanceToPoint) {
+                                minDistanceToPoint = distance;
+                                minDistanceToPointClusterId = k;
+                            }
+                        }
+
+                        if (minDistanceToPointClusterId === minDistanceToClickPointClusterId) {
+                            newClusterLabls[i][j] = maxClusterId + 1;
+                        } else {
+                            newClusterLabls[i][j] = selectedClusterId;
+                        }
+                    }
+                }
             }
             setClusterLabels(newClusterLabls)
         }
-    }, [clickPoint, props.features, binsInfo]);
+    }, [clickPoint, props.features, binsInfo, maxDenstyValue]);
 
     useEffect(() => {
         if (clusterLabls.length > 0 && binsInfo.length > 0) {
