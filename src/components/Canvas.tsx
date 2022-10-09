@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-10-08 21:39:37
+ * @LastEditTime: 2022-10-09 19:14:20
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -381,7 +381,7 @@ export default function Canvas(props: CanvasProps) {
 
     useEffect(() => {
         if (clickPoint) {
-            const selectedClusterId = clusterLabls[clickPoint[0]][clickPoint[1]];
+            const selectedClusterId = clusterLabls[clickPoint[0]][799 - clickPoint[1]];
             let maxClusterId = clusterLabls[0][0];
             for (let i = 1; i < clusterLabls.length; ++i) {
                 for (let j = 1; j < clusterLabls[i].length; ++j) {
@@ -393,17 +393,17 @@ export default function Canvas(props: CanvasProps) {
             const selectedCluster: { x: number; y: number; feature: number[] }[] = [];
             for (let i = 0; i < clusterLabls.length; ++i) {
                 for (let j = 0; j < clusterLabls[i].length; ++j) {
-                    //if (clusterLabls[i][j] === selectedClusterId) {
-                    selectedCluster.push({ x: i, y: j, feature: props.features[i * props.features[0].length + j] });
-                    //}
+                    if (clusterLabls[i][j] === selectedClusterId) {
+                        selectedCluster.push({ x: i, y: j, feature: props.features[i * clusterLabls[i].length + j] });
+                    }
                 }
             }
             console.log(selectedCluster);
-            const clusteringResult = kmeans(selectedCluster.map(v => v.feature), maxClusterId + 2);
+            const clusteringResult = kmeans(selectedCluster.map(v => v.feature), 2, "kmeans++");
             console.log(clusteringResult);
             const newClusterLabls: number[][] = structuredClone(clusterLabls);
             for (let i = 0; i < selectedCluster.length; ++i) {
-                newClusterLabls[selectedCluster[i].x][selectedCluster[i].y] = clusteringResult.indexes[i];
+                newClusterLabls[selectedCluster[i].x][selectedCluster[i].y] = clusteringResult.indexes[i] === 0 ? selectedClusterId : maxClusterId + 1;
             }
             setClusterLabels(newClusterLabls)
         }

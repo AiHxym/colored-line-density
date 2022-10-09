@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-09-06 15:48:47
+ * @LastEditTime: 2022-10-09 16:43:24
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -51,6 +51,11 @@ function App() {
                     dynamicTyping: true,
                     complete: (results: papa.ParseResult<any>) => {
                       const data = results.data;
+                      if (data.length < 1280000) {
+                        for (let i = data.length; i < 1280000; ++i) {
+                          data.push(new Array(data[0].length).fill(0));
+                        }
+                      }
                       setFeatures(data);
                     }
                   });
