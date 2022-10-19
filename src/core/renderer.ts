@@ -1,13 +1,14 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-10-19 14:56:44
+ * @LastEditTime: 2022-10-19 19:16:36
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
  */
 import { BinningMap } from "./binning";
 import * as d3 from "d3";
+import chroma from "chroma-js";
 
 function rgb2hsl(r: number, g: number, b: number): [number, number, number] {
     // get the min and max of r,g,b
@@ -99,7 +100,7 @@ export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t
             }
             if (hues.length > 0 && hues[i * bins[0].length + j] !== undefined && bin.size > 0) {
                 //console.log(i, j);
-                binColor = "hsl(" + hues[i * bins[0].length + j] + ", 100%, 50%)";
+                binColor = chroma.hcl(hues[i * bins[0].length + j], 10 + (80 - 10) * bin.size / maxDensityValue, 90 - (90 - 20) * bin.size / maxDensityValue).hex();
             }
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);
