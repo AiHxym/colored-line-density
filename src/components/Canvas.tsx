@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-10-09 23:33:34
+ * @LastEditTime: 2022-10-19 14:53:04
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -26,6 +26,7 @@ interface CanvasProps {
     lowDimensionalLines: number[][];
     features: number[][];
     clusters: number[];
+    hues: number[];
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -395,7 +396,7 @@ export default function Canvas(props: CanvasProps) {
             const selectedCluster: { x: number; y: number; feature: number[] }[] = [];
             for (let i = 0; i < clusterLabls.length; ++i) {
                 for (let j = 0; j < clusterLabls[i].length; ++j) {
-                    if (clusterLabls[i][j] === selectedClusterId && binsInfo[i][j].size / maxDenstyValue > 0.01) {
+                    if (clusterLabls[i][j] === selectedClusterId && binsInfo[i][j].size / maxDenstyValue > 0.15) {
                         selectedCluster.push({ x: i, y: j, feature: props.features[i * clusterLabls[i].length + j] });
                     }
                 }
@@ -452,9 +453,9 @@ export default function Canvas(props: CanvasProps) {
         if (clusterLabls.length > 0 && binsInfo.length > 0) {
             console.log(clusterLabls);
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            render(binsInfo, canvas, d3.interpolateMagma, [], [], clusterLabls.flat());
+            render(binsInfo, canvas, d3.interpolateMagma, [], [], clusterLabls.flat(), props.hues);
         }
-    }, [binsInfo, clusterLabls]);
+    }, [binsInfo, clusterLabls, props.hues]);
 
     return (
         <div className="canvas-container">
