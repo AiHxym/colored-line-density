@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-10-20 21:24:15
+ * @LastEditTime: 2022-10-31 22:23:47
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -50,6 +50,7 @@ function rgb2hsl(r: number, g: number, b: number): [number, number, number] {
 export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t: number) => string, representVectors: number[][][], features: number[][], clusters: number[], hues: number[]): void {
 
     const clusterColormaps = [d3.interpolateBlues, d3.interpolateGreens, d3.interpolateOranges, d3.interpolatePurples, d3.interpolateReds, d3.interpolateGreys];
+    const clusterHues = [204, 28, 120, 359, 271, 10, 318, 0, 60, 185];
     const ctx = canvas.getContext("2d");
     if (!ctx) {
         throw new Error("Failed to get canvas context");
@@ -100,7 +101,7 @@ export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t
             }
             if (hues.length > 0 && hues[i * bins[0].length + j] !== undefined && bin.size > 0) {
                 //console.log(i, j);
-                binColor = chroma.hcl(hues[i * bins[0].length + j], 1 + (80 - 1) * bin.size / maxDensityValue, 95 - (95 - 20) * bin.size / maxDensityValue).hex();
+                binColor = chroma.hcl(hues[i * bins[0].length + j], Math.pow(0.05 + (1 - 0.05) * bin.size / maxDensityValue, 1) * 100, Math.pow(0.95 - (0.95 - 0.5) * bin.size / maxDensityValue, 3) * 100).hex();
             }
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);
