@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-10-19 14:57:34
+ * @LastEditTime: 2022-11-06 22:55:42
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -11,6 +11,7 @@ import 'antd/dist/antd.min.css';
 import { Button, Tabs, InputNumber, Layout, Select, Divider, Row, Col, List, Switch, Slider, Upload } from "antd";
 import Canvas from './components/Canvas';
 import papa from 'papaparse';
+import axios from 'axios';
 import { Line, ImportamceLine } from './core/defs/line';
 import { UploadOutlined } from '@ant-design/icons';
 
@@ -27,6 +28,18 @@ function App() {
   const [features, setFeatures] = useState<number[][]>([]);
   const [clusters, setClusters] = useState<number[]>([]);
   const [hues, setHues] = useState<number[]>([]);
+
+  useEffect(() => {
+    fetch('http://134.34.231.83:8080/set_cookie')
+      .then(data => {
+        return data;
+      })
+      .then(post => {
+        console.log(post);
+      });
+
+  }, []);
+
   return (
     <div className="App">
       <Layout>
@@ -36,8 +49,11 @@ function App() {
             <Upload
               accept=".csv"
               showUploadList={false}
+              action="http://134.34.231.83:8080/upload"
+              method='post'
               beforeUpload={file => {
                 const fileName = file.name;
+                /*
                 if (fileName === "representation.csv") {
                   papa.parse(file, {
                     header: false,
@@ -79,6 +95,7 @@ function App() {
                     }
                   });
                 } else {
+
                   papa.parse(file, {
                     header: true,
                     dynamicTyping: true,
@@ -105,36 +122,26 @@ function App() {
                         })
                         lines.push(line);
                       }
-                      /*
-                      for (let line of lines) {
-                        for (let point of line) {
-                          if (point.x > maxX) {
-                            maxX = point.x;
-                          } if (point.y > maxY) {
-                            maxY = point.y;
-                          } if (point.x < minX) {
-                            minX = point.x;
-                          } if (point.y < minY) {
-                            minY = point.y;
-                          }
-                        }
-                      }
-                      for (let line of lines) {
-                        line.sort((a, b) => a.x - b.x);
-                        for (let point of line) {
-                          point.x = (point.x - minX) / (maxX - minX) * 99;
-                          point.y = (point.y - minY) / (maxY - minY) * 99;
-                        }
-                      }
-                      */
+                    
                       console.log(lines);
                       setLines(lines);
 
                     }
                   });
-                }
+                }*/
                 // Prevent upload
-                return false;
+                return true;
+              }}
+              onChange={info => {
+                const { status } = info.file;
+                if (status !== 'uploading') {
+                  console.log(info.file, info.fileList);
+                }
+                if (status === 'done') {
+                  console.log(`${info.file.name} file uploaded successfully.`);
+                } else if (status === 'error') {
+                  console.log(`${info.file.name} file upload failed.`);
+                }
               }}
             >
               <Button type="dashed" block icon={<UploadOutlined />}>
