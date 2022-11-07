@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-07 18:27:21
+ * @LastEditTime: 2022-11-07 19:45:01
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -29,6 +29,7 @@ function App() {
   const [clusters, setClusters] = useState<number[]>([]);
   const [hues, setHues] = useState<number[]>([]);
   const [binDensity, setBinDensity] = useState<number[][]>([]);
+  const [manifoldMethod, setManifoldMethod] = useState<string>('UMAP');
 
   useEffect(() => {
     axios.get('http://134.34.231.83:8080/set_cookie', { withCredentials: true });
@@ -40,6 +41,28 @@ function App() {
         <Header></Header>
         <Layout>
           <Sider width={300} theme="light" className="site-layout-background">
+            <Divider>Parameters</Divider>
+            <Row>
+              <Col span={12} className="item-text">Manifold Method:</Col>
+              <Col span={12}>
+                <Select defaultValue={manifoldMethod} style={{ width: 100 }} onChange={(value) => {
+                  setManifoldMethod(value);
+                }}>
+                  <Option value="UMAP">UMAP</Option>
+                  <Option value="t-SNE">t-SNE</Option>
+                  <Option value="LLE">LLE</Option>
+                </Select>
+              </Col>
+            </Row>
+            <br />
+            <Row>
+              <Col span={12} className="item-text">GMM Components:</Col>
+              <Col span={12}>
+                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={undefined} step={1} onChange={(value) => { }} onPressEnter={(e) => { }} />
+              </Col>
+            </Row>
+            <br />
+            <Divider>Color Options</Divider>
             <Upload
               accept=".csv"
               showUploadList={false}
@@ -140,7 +163,7 @@ function App() {
                 }
               }}
             >
-              <Button type="dashed" block icon={<UploadOutlined />}>
+              <Button type="default" block icon={<UploadOutlined />}>
                 Click to Upload
               </Button>
             </Upload>
