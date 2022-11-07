@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-07 19:45:01
+ * @LastEditTime: 2022-11-07 22:41:01
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -30,9 +30,11 @@ function App() {
   const [hues, setHues] = useState<number[]>([]);
   const [binDensity, setBinDensity] = useState<number[][]>([]);
   const [manifoldMethod, setManifoldMethod] = useState<string>('UMAP');
+  const [componentsNum, setComponentsNum] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    axios.get('http://134.34.231.83:8080/set_cookie', { withCredentials: true });
+    axios.defaults.withCredentials = true;
+    axios.get('http://134.34.231.83:8080/set_cookie');
   }, []);
 
   return (
@@ -46,6 +48,15 @@ function App() {
               <Col span={12} className="item-text">Manifold Method:</Col>
               <Col span={12}>
                 <Select defaultValue={manifoldMethod} style={{ width: 100 }} onChange={(value) => {
+                  axios.post('http://134.34.231.83:8080/set_manifold', {
+                    manifoldMethod: value
+                  })
+                    .then(function (response) {
+                      console.log(response);
+                    })
+                    .catch(function (error) {
+                      console.log(error);
+                    });
                   setManifoldMethod(value);
                 }}>
                   <Option value="UMAP">UMAP</Option>
@@ -58,7 +69,20 @@ function App() {
             <Row>
               <Col span={12} className="item-text">GMM Components:</Col>
               <Col span={12}>
-                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={undefined} step={1} onChange={(value) => { }} onPressEnter={(e) => { }} />
+                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={undefined} step={1}
+                  onChange={(value) => { setComponentsNum(value) }}
+                  onPressEnter={(e) => {
+                    axios.post('http://134.34.231.83:8080/set_GMM_components', {
+                      componentsNum: componentsNum
+                    })
+                      .then(function (response) {
+                        console.log(response);
+                        setHues(response.data);
+                      })
+                      .catch(function (error) {
+                        console.log(error);
+                      });
+                  }} />
               </Col>
             </Row>
             <br />
