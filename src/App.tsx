@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-06 22:55:42
+ * @LastEditTime: 2022-11-07 18:27:21
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -28,16 +28,10 @@ function App() {
   const [features, setFeatures] = useState<number[][]>([]);
   const [clusters, setClusters] = useState<number[]>([]);
   const [hues, setHues] = useState<number[]>([]);
+  const [binDensity, setBinDensity] = useState<number[][]>([]);
 
   useEffect(() => {
-    fetch('http://134.34.231.83:8080/set_cookie')
-      .then(data => {
-        return data;
-      })
-      .then(post => {
-        console.log(post);
-      });
-
+    axios.get('http://134.34.231.83:8080/set_cookie', { withCredentials: true });
   }, []);
 
   return (
@@ -50,6 +44,7 @@ function App() {
               accept=".csv"
               showUploadList={false}
               action="http://134.34.231.83:8080/upload"
+              withCredentials={true}
               method='post'
               beforeUpload={file => {
                 const fileName = file.name;
@@ -136,6 +131,7 @@ function App() {
                 const { status } = info.file;
                 if (status !== 'uploading') {
                   console.log(info.file, info.fileList);
+                  setBinDensity(info.file.response);
                 }
                 if (status === 'done') {
                   console.log(`${info.file.name} file uploaded successfully.`);
@@ -150,7 +146,7 @@ function App() {
             </Upload>
           </Sider>
           <Content>
-            <Canvas lines={lines} lowDimensionalLines={lowDimensionalLines} features={features} clusters={clusters} hues={hues}></Canvas>
+            <Canvas binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines} features={features} clusters={clusters} hues={hues}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>
