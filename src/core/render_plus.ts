@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2022-11-07 18:28:48
+ * @LastEditTime: 2022-11-11 16:58:43
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/render_plus.ts
@@ -34,7 +34,7 @@ export function render(binDensity: number[][], canvas: HTMLCanvasElement, colorM
             }
             if (hues.length > 0 && hues[i * binDensity[0].length + j] !== undefined && binDensityValue > 0) {
                 //console.log(i, j);
-                binColor = chroma.hcl(hues[i * binDensity[0].length + j], Math.pow(0.05 + (1 - 0.05) * binDensityValue, 1.3) * 100, Math.pow(0.95 - (0.95 - 0.55) * binDensityValue, 2) * 100).hex();
+                binColor = chroma.hcl(hues[i * binDensity[0].length + j], Math.pow(0.3 + (1.2 - 0.3) * binDensityValue, 1) * 100, Math.pow(0.9 - (0.9 - 0.2) * binDensityValue, 1) * 100).hex();
             }
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);
