@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-11-22 15:11:56
+ * @LastEditTime: 2022-11-22 17:13:31
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -67,7 +67,7 @@ export default function Canvas(props: CanvasProps) {
                     const bin = props.binsInfo[i][j];
                     if ((new Set([...pickedLines].filter((val: number) => bin.has(val)))).size > 0) {
                         const binX = i * binWidth;
-                        const binY = j * binHeight;
+                        const binY = (props.binsInfo[i].length - j) * binHeight;
 
                         ctx.fillStyle = d3.interpolateOranges((bin.size / 20) * 0.7 + 0.3);
                         ctx.fillRect(binX, binY, binWidth, binHeight);
@@ -211,7 +211,7 @@ export default function Canvas(props: CanvasProps) {
                         for (let i = mouseGridX - Math.floor(strokeWidth / 2); i <= mouseGridX + Math.floor(strokeWidth / 2); ++i) {
                             for (let j = mouseGridY - Math.floor(strokeWidth / 2); j <= mouseGridY + Math.floor(strokeWidth / 2); ++j) {
                                 if (i >= 0 && i < 1000 && j >= 0 && j < 500) {
-                                    pickedGrid.add(i + ',' + j);
+                                    pickedGrid.add(i + ',' + (499 - j));
                                 }
                             }
                         }
