@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-11-22 03:54:01
+ * @LastEditTime: 2022-11-22 15:11:56
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -197,7 +197,7 @@ export default function Canvas(props: CanvasProps) {
 
     return (
         <div className="canvas-container">
-            <canvas id="diagram" width="1600" height="800"
+            <canvas id="diagram" width="1000" height="500"
                 onMouseDown={(event) => {
                     setIsMouseDown(true);
                 }}
@@ -210,7 +210,7 @@ export default function Canvas(props: CanvasProps) {
                         const mouseGridY = Math.floor(mouseY / 1);
                         for (let i = mouseGridX - Math.floor(strokeWidth / 2); i <= mouseGridX + Math.floor(strokeWidth / 2); ++i) {
                             for (let j = mouseGridY - Math.floor(strokeWidth / 2); j <= mouseGridY + Math.floor(strokeWidth / 2); ++j) {
-                                if (i >= 0 && i < 1600 && j >= 0 && j < 800) {
+                                if (i >= 0 && i < 1000 && j >= 0 && j < 500) {
                                     pickedGrid.add(i + ',' + j);
                                 }
                             }
@@ -238,9 +238,9 @@ export default function Canvas(props: CanvasProps) {
             }}></svg>*/}
             <svg id="interaction-renderer" style={{
                 position: 'relative',
-                top: '-806px',
-                width: '1600px',
-                height: '800px',
+                top: '-506px',
+                width: '1000px',
+                height: '500px',
                 pointerEvents: 'none'
             }}></svg>
         </div>
