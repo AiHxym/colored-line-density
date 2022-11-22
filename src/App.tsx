@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-13 23:58:05
+ * @LastEditTime: 2022-11-22 03:23:27
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -18,6 +18,7 @@ import * as d3 from 'd3';
 
 import './App.css';
 import { RcFile } from 'antd/lib/upload';
+import { BinningMap } from './core/binning';
 
 const { TabPane } = Tabs;
 const { Header, Footer, Sider, Content } = Layout;
@@ -35,6 +36,7 @@ function App() {
   const [componentsNum, setComponentsNum] = useState<number | undefined>(undefined);
   const [hueCenters, setHueCenters] = useState<number[]>([]);
   const [clusterProbs, setClusterProbs] = useState<number[][]>([]);
+  const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
 
 
   useEffect(() => {
@@ -341,7 +343,13 @@ function App() {
                 const { status } = info.file;
                 if (status !== 'uploading') {
                   console.log(info.file, info.fileList);
-                  setBinDensity(info.file.response);
+                  setBinDensity(info.file.response.densityMap);
+                  for (let i = 0; i < info.file.response.bins.length; ++i) {
+                    for (let j = 0; j < info.file.response.bins[i].length; ++j) {
+                      info.file.response.bins[i][j] = new Set(info.file.response.bins[i][j]);
+                    }
+                  }
+                  setBinsInfo(info.file.response.bins);
                 }
                 if (status === 'done') {
                   console.log(`${info.file.name} file uploaded successfully.`);
@@ -356,7 +364,8 @@ function App() {
             </Upload>
           </Sider>
           <Content>
-            <Canvas binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines} features={features} clusters={clusters} hues={hues}></Canvas>
+            <Canvas binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines}
+              features={features} clusters={clusters} hues={hues} binsInfo={binsInfo}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>

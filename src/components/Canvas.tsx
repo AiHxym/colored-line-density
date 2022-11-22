@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-11-07 18:25:03
+ * @LastEditTime: 2022-11-22 03:54:01
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -28,6 +28,7 @@ interface CanvasProps {
     clusters: number[];
     hues: number[];
     binDensity: number[][];
+    binsInfo: BinningMap;
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -35,13 +36,47 @@ export default function Canvas(props: CanvasProps) {
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [strokeWidth, setStrokeWidth] = useState(29);
     const [strokePickedGrid, setStrokePickedGrid] = useState<Set<string>>(new Set());
-    const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
+    //const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
     const [clusterLabls, setClusterLabels] = useState<number[][]>([]);
     const [clickPoint, setClickPoint] = useState<[number, number] | null>(null);
     const [maxDenstyValue, setMaxDensityValue] = useState<number>(0);
 
     const pickedGrid = new Set<string>();
 
+
+    useEffect(() => {
+        const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+            throw new Error("Failed to get canvas context");
+        }
+        if (strokePickedGrid.size > 0) {
+            let pickedLines = new Set<number>();
+            for (let girdCoordinates of strokePickedGrid) {
+                const [x, y] = girdCoordinates.split(',').map(Number);
+                pickedLines = new Set([...pickedLines, ...props.binsInfo[x][y]]);
+            }
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const binWidth = width / props.binsInfo.length;
+            const binHeight = height / props.binsInfo[0].length;
+
+            for (let i = 0; i < props.binsInfo.length; i++) {
+                for (let j = 0; j < props.binsInfo[0].length; j++) {
+                    const bin = props.binsInfo[i][j];
+                    if ((new Set([...pickedLines].filter((val: number) => bin.has(val)))).size > 0) {
+                        const binX = i * binWidth;
+                        const binY = j * binHeight;
+
+                        ctx.fillStyle = d3.interpolateOranges((bin.size / 20) * 0.7 + 0.3);
+                        ctx.fillRect(binX, binY, binWidth, binHeight);
+                    }
+
+                }
+            }
+        }
+    }, [strokePickedGrid, props.binsInfo]);
 
     /*
     useEffect(() => {
@@ -167,7 +202,7 @@ export default function Canvas(props: CanvasProps) {
                     setIsMouseDown(true);
                 }}
                 onMouseMove={(event) => {
-                    /*
+
                     if (isMouseDown) {
                         const mouseX = event.nativeEvent.offsetX;
                         const mouseY = event.nativeEvent.offsetY;
@@ -176,18 +211,19 @@ export default function Canvas(props: CanvasProps) {
                         for (let i = mouseGridX - Math.floor(strokeWidth / 2); i <= mouseGridX + Math.floor(strokeWidth / 2); ++i) {
                             for (let j = mouseGridY - Math.floor(strokeWidth / 2); j <= mouseGridY + Math.floor(strokeWidth / 2); ++j) {
                                 if (i >= 0 && i < 1600 && j >= 0 && j < 800) {
-                                    pickedGrid.add(i + ',' + (799 - j));
+                                    pickedGrid.add(i + ',' + j);
                                 }
                             }
                         }
-                    }*/
+                    }
                 }}
                 onMouseUp={(event) => {
                     setIsMouseDown(false);
-                    /*
+
                     setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
                     pickedGrid.clear();
-                    */
+                    console.log(strokePickedGrid);
+
                 }}
                 onClick={(event) => {
                     const mouseX = event.nativeEvent.offsetX;
