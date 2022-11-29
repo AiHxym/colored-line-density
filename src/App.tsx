@@ -1,14 +1,18 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-22 03:23:27
+ * @LastEditTime: 2022-11-29 16:20:09
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
  */
 import React, { useState, useEffect, useRef } from 'react';
 import 'antd/dist/antd.min.css';
-import { Button, Tabs, InputNumber, Layout, Select, Divider, Row, Col, List, Switch, Slider, Upload } from "antd";
+import {
+  Button, Tabs, InputNumber, Layout, Select, Divider,
+  Row, Col, List, Switch, Slider, Upload, Checkbox, CheckboxOptionType
+} from "antd";
+import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import Canvas from './components/Canvas';
 import papa from 'papaparse';
 import axios from 'axios';
@@ -24,6 +28,20 @@ const { TabPane } = Tabs;
 const { Header, Footer, Sider, Content } = Layout;
 const { Option } = Select;
 
+let a1 = 360 * 0.05;  // i, L, I
+let a2 = 360 * 0.22;  // L
+let a3 = 360 * 0.26;  // V, Y, X
+let a4 = 360 * 0.50;  // T
+let hueTemplates: { [key: string]: number[] } = {};
+hueTemplates['i-Type'] = [360, a1];  // center, range
+hueTemplates['V-Type'] = [360, a3];
+hueTemplates['T-Type'] = [360, a4];
+hueTemplates['L-Type'] = [360, 90, a1, a2];  // centers *2 & ranges *2
+hueTemplates['Lm-Type'] = [360, 270, a1, a2];
+hueTemplates['I-Type'] = [360, 180, a1, a1];
+hueTemplates['Y-Type'] = [360, 180, a3, a1];
+hueTemplates['X-Type'] = [360, 180, a3, a3];
+
 
 function App() {
   const [lines, setLines] = useState<Line[]>([]);
@@ -37,6 +55,12 @@ function App() {
   const [hueCenters, setHueCenters] = useState<number[]>([]);
   const [clusterProbs, setClusterProbs] = useState<number[][]>([]);
   const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
+  const [hueTemplateType, setHueTemplateType] = useState<string>('N-Type');
+  const [hueTemplateRotation, setHueTemplateRotation] = useState<number>(0);
+  const [hueTemplateDomain, setHueTemplateDomain] = useState<number[]>(Array.from(Array(360), (_, i) => i));
+  const [clusterOptions, setClusterOptions] = useState<(string | number | CheckboxOptionType)[]>([]);
+  const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
+  const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
 
 
   useEffect(() => {
@@ -48,6 +72,42 @@ function App() {
     let dotProduct = (a: number[], b: number[]) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
     setHues(clusterProbs.map(clusterProb => dotProduct(clusterProb, hueCenters)));
   }, [hueCenters, clusterProbs]);
+
+  useEffect(() => {
+    if (hueTemplateType !== 'N-Type') {
+      let singleSector = ['i-Type', 'V-Type', 'T-Type'];
+      let doubleSectors = ['L-Type', 'Lm-Type', 'I-Type', 'Y-Type', 'X-Type'];
+      let ht = hueTemplates[hueTemplateType];
+      let centers: number[] = []; // centers of each sector
+      let init_c: number[] = [];  // store initial centers
+      let starts: number[] = [];  // starting hue of each sector
+      let ranges: number[] = [];  // ranges of each sector
+      let newDomain = new Array();
+      // let rotation = 0; // rotation of the template
+      if (singleSector.includes(hueTemplateType)) {
+        centers = [Math.floor(ht[0])];
+        init_c = centers;
+        starts = [(Math.floor(ht[0] - ht[1] / 2)) % 360];
+        ranges = [Math.floor(ht[1])];
+        newDomain = new Array(ranges[0]).fill(0).map((_, index) => (starts[0] + index) % 360); // start, ..., start+range
+      }
+      else if (doubleSectors.includes(hueTemplateType)) {
+        centers = [Math.floor(ht[0]), Math.floor(ht[1])];
+        init_c = centers;
+        starts = [(Math.floor(ht[0] - ht[2] / 2)) % 360,
+        (Math.floor(ht[1] - ht[3] / 2)) % 360];
+        ranges = [Math.floor(ht[2]), Math.floor(ht[3])];
+        let d1 = new Array(ranges[0]).fill(0).map((_, index) => (starts[0] + index) % 360);
+        let d2 = new Array(ranges[1]).fill(1).map((_, index) => (starts[1] + index) % 360);
+        newDomain = d1.concat(d2);
+      }
+      // update hueTemplateDomain
+      setHueTemplateRotation(0);
+      setHueTemplateDomain(newDomain);
+      // hue mapping
+      setHueCenters(getHueInTemplates(centers, ranges, hueCenters));
+    }
+  }, [hueCenters, hueTemplateType]);
 
   useEffect(() => {
     // Data
@@ -146,6 +206,89 @@ function App() {
         .padAngle(0.0)
         .padRadius(innerRadius) as any)
 
+    // Hue Templates
+    // TODO: duplicated codes
+    if (hueTemplateType !== 'N-Type') {
+      let singleSector = ['i-Type', 'V-Type', 'T-Type'];
+      let doubleSectors = ['L-Type', 'Lm-Type', 'I-Type', 'Y-Type', 'X-Type'];
+      let ht = hueTemplates[hueTemplateType];
+      let centers: number[] = []; // centers of each sector
+      let init_c: number[] = [];  // store initial centers
+      let starts: number[] = [];  // starting hue of each sector
+      let ranges: number[] = [];  // ranges of each sector
+      let newDomain = new Array();
+      let init_mx = 0;  // store initial mouse pos for every drag
+      let init_my = 0;
+      // let rotation = 0; // rotation of the template
+      if (singleSector.includes(hueTemplateType)) {
+        centers = [Math.floor(ht[0])];
+        init_c = centers;
+        starts = [(Math.floor(ht[0] - ht[1] / 2)) % 360];
+        ranges = [Math.floor(ht[1])];
+        newDomain = new Array(ranges[0]).fill(0).map((_, index) => (starts[0] + index) % 360); // start, ..., start+range
+      }
+      else if (doubleSectors.includes(hueTemplateType)) {
+        centers = [Math.floor(ht[0]), Math.floor(ht[1])];
+        init_c = centers;
+        starts = [(Math.floor(ht[0] - ht[2] / 2)) % 360,
+        (Math.floor(ht[1] - ht[3] / 2)) % 360];
+        ranges = [Math.floor(ht[2]), Math.floor(ht[3])];
+        let d1 = new Array(ranges[0]).fill(0).map((_, index) => (starts[0] + index) % 360);
+        let d2 = new Array(ranges[1]).fill(1).map((_, index) => (starts[1] + index) % 360);
+        newDomain = d1.concat(d2);
+      }
+
+      // draw the template to drag and rotate
+      svg.append("g")
+        .selectAll("path")
+        .data(starts)
+        .enter()
+        .append("path")
+        .attr("fill", "gray")
+        .attr("fill-opacity", 0.5)
+        .attr("class", "hue-template")
+        .attr("d", d3.arc()
+          .innerRadius(0)
+          .outerRadius(ybis(gap))
+          .startAngle((i, index) => x((i as unknown as number).toString()) as number)
+          .endAngle((i, index) => x((i as unknown as number).toString()) as number + x.bandwidth() * ranges[index])
+          .padAngle(0.0) as any)
+        .attr('transform', 'rotate(' + hueTemplateRotation + ')')
+        .call(d3.drag()
+          .on("start", function (e) {
+            d3.selectAll(".hue-template").attr("fill-opacity", 0.3);
+            init_mx = e.x;
+            init_my = e.y;
+          })
+          .on("drag", function (e) {
+            let ex = e.x;
+            let ey = e.y;
+            let angle = getAngle(init_mx, init_my, ex, ey);
+            let rotation_temp = (hueTemplateRotation + angle) % 360;
+            d3.selectAll(".hue-template").attr('transform', 'rotate(' + rotation_temp + ')');
+          })
+          .on("end", function (e) {
+            d3.selectAll(".hue-template").attr("fill-opacity", 0.5);
+            let ex = e.x;
+            let ey = e.y;
+            let angle = getAngle(init_mx, init_my, ex, ey);
+            angle = Math.floor(angle);
+            let rotation = (hueTemplateRotation + angle) % 360;
+            setHueTemplateRotation(rotation);
+            // hueTemplateRotation = rotation;
+            centers = centers.map((i, index) => (init_c[index] + rotation) % 360)
+            // update hueTemplateDomain
+            newDomain = hueTemplateDomain.map((h) => (h + angle) % 360);
+            setHueTemplateDomain(newDomain);
+            // hueTemplateDomain = newDomain;;
+            // hue mapping
+            setHueCenters(getHueInTemplates(centers, ranges, hueCenters));
+          }) as any
+        )
+        .style("cursor", "pointer");
+    }
+
+
     // Circle
     const radius = (y(ring_width) - innerRadius) / 2
     const pos_radius = innerRadius + radius
@@ -170,6 +313,11 @@ function App() {
           let ex = e.x;
           let ey = e.y;
           let current_hue = getHueByPos(ex, ey);
+          if (!hueTemplateDomain.includes(current_hue)) {
+            let dis = hueTemplateDomain.map((h) => Math.abs(h - current_hue));
+            let idx = dis.findIndex((d, i) => { return d === Math.min(...dis) });
+            current_hue = hueTemplateDomain[idx];
+          }
           let new_y = -Math.cos(current_hue * Math.PI / 180) * pos_radius;
           let new_x = Math.sin(current_hue * Math.PI / 180) * pos_radius;
           d3.select(this).attr("cx", new_x).attr("cy", new_y);
@@ -196,7 +344,90 @@ function App() {
     }
 
     const getHueByPos = (X: number, Y: number) => getAngle(0, -100, X, Y)
-  }, [hueCenters, clusterProbs, hues, binDensity]);
+  }, [hueCenters, clusterProbs, hues, binDensity, hueTemplateType, hueTemplateRotation, hueTemplateDomain]);
+
+  const hueMapping = (C: number, R: number, init_H: number[]) => {
+    let sigma = 1;
+    let new_H = new Array(init_H.length).fill(0);
+    init_H.forEach((h, i) => {
+      let d = C - h;
+      let flag = true;
+      let x = d;
+      if (d < 0 && Math.abs(d) > 180) { x = 360 - Math.abs(d); }  // angle restrict within 180
+      if (d >= 0 && Math.abs(d) > 180) { x = 360 - Math.abs(d); flag = false; }
+      if (d >= 0 && Math.abs(d) <= 180) { x = d; }
+      if (d < 0 && Math.abs(d) <= 180) { flag = false; }
+      if (Math.abs(x) <= R / 2) { new_H[i] = h; }
+      else {
+        x = x / 180;
+        let gaussian = Math.exp(-Math.pow((x) / sigma, 2.0) / 2.0) / Math.sqrt(2 * Math.PI);
+        let shift = Math.floor((1 - gaussian) * R / 2);
+        // console.log('shift:', shift)
+        if (flag) { new_H[i] = (C - shift + 360) % 360; }
+        else { new_H[i] = (C + shift) % 360; }
+      }
+    })
+    // console.log(new_H)
+    return new_H;
+  }
+
+  const getHueInTemplates = (C: number[], R: number[], init_H: number[]) => {
+    // only one sector
+    if (C.length === 1) {
+      return hueMapping(C[0], R[0], init_H);
+    }
+    // two sectors
+    else {
+      let sector1: number[] = [];
+      let sector2: number[] = [];
+      let indexes: number[] = [];
+      // split by distances to the centers of each sector
+      init_H.forEach((h, i) => {
+        let d1 = Math.abs(C[0] - h);
+        let d2 = Math.abs(C[1] - h);
+        if (d1 > 180) { d1 = 360 - d1; }
+        if (d2 > 180) { d2 = 360 - d2; }
+        if (d1 <= d2) { sector1.push(h); indexes.push(0); }
+        else { sector2.push(h); indexes.push(1); }
+      })
+      // hue mapping for each sector
+      let sector1_h = hueMapping(C[0], R[0], sector1);
+      let sector2_h = hueMapping(C[1], R[1], sector2);
+      let new_H = new Array(init_H.length).fill(0);
+      indexes.forEach((idx, i) => {
+        if (idx == 0) { new_H[i] = sector1_h.shift(); }
+        else { new_H[i] = sector2_h.shift(); }
+      })
+      return new_H;
+    }
+  }
+
+  useEffect(() => {
+    ifShowedCluster.forEach((show, i) => {
+      if (show) {
+        d3.select('#hue-center' + i).attr('visibility', 'visible')
+      }
+      else {
+        d3.select('#hue-center' + i).attr('visibility', 'hidden')
+      }
+    })
+  }, [ifShowedCluster])
+
+  useEffect(() => {
+
+    const color_C = 120;
+    const color_L = 55;
+    let checkboxColors = hueCenters.map((h) => d3.hcl(h, color_C, color_L).formatHex())
+
+    let cluster_checkbox = document.getElementById('cluster-checkbox');
+    cluster_checkbox?.childNodes.forEach((n) => {
+      n.childNodes.forEach((n, i) => {
+        (n as HTMLElement).style.setProperty("--background-color", checkboxColors[i]);
+        (n as HTMLElement).style.setProperty("--border-color", checkboxColors[i]);
+      })
+    })
+
+  }, [componentsNum, hueCenters]);
 
   return (
     <div className="App">
@@ -205,6 +436,8 @@ function App() {
         <Layout>
           <Sider width={300} theme="light" className="site-layout-background">
             <Divider>Parameters</Divider>
+            {
+              /*  
             <Row>
               <Col span={12} className="item-text">Manifold Method:</Col>
               <Col span={12}>
@@ -226,6 +459,8 @@ function App() {
                 </Select>
               </Col>
             </Row>
+            */
+            }
             <br />
             <Row>
               <Col span={12} className="item-text">GMM Components:</Col>
@@ -249,8 +484,39 @@ function App() {
               </Col>
             </Row>
             <br />
+            <div id='cluster-checkbox'>
+              <Checkbox.Group style={{ 'width': '100%', }}
+                name='clusterCheckBox'
+                options={clusterOptions}
+                value={checkboxState}
+                onChange={(value) => {
+                  setCheckboxState(value);
+                  let ifShow = new Array(componentsNum).fill(false)
+                  value.forEach((v) => { ifShow[v as number] = true; })
+                  setIfShowedCluster(ifShow);
+                }} />
+            </div>
+            <br />
             <Divider>Color Options</Divider>
             <div id="hue-picker"></div>
+            <Row>
+              <Col span={12} className="item-text">Hue Template:</Col>
+              <Col span={12}>
+                <Select defaultValue={hueTemplateType}
+                  style={{ width: 100 }}
+                  onChange={(value) => { setHueTemplateType(value); }}>
+                  <Option value='N-Type'>None</Option>
+                  <Option value='i-Type'>i-Type</Option>
+                  <Option value='V-Type'>V-Type</Option>
+                  <Option value='T-Type'>T-Type</Option>
+                  <Option value='L-Type'>L-Type</Option>
+                  <Option value='Lm-Type'>Lm-Type</Option>
+                  <Option value='I-Type'>I-Type</Option>
+                  <Option value='Y-Type'>Y-Type</Option>
+                  <Option value='X-Type'>X-Type</Option>
+                </Select>
+              </Col>
+            </Row>
             <Divider>Data Options</Divider>
             <Upload
               accept=".csv"

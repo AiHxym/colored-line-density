@@ -45,3 +45,10 @@
   text-align: left !important;
   padding-left: 20px;
 }
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--background-color);
+  border-color: var(--border-color);
+  /* background-color: rgb(0, 0, 0);
+  border-color: rgb(0, 0, 0); */
+}
