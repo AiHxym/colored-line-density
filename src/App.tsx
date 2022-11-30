@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-30 21:45:32
+ * @LastEditTime: 2022-11-30 22:04:53
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -79,6 +79,7 @@ function App() {
   const [clusterOptions, setClusterOptions] = useState<(string | number | CheckboxOptionType)[]>([]);
   const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
+  const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
 
 
   useEffect(() => {
@@ -117,6 +118,7 @@ function App() {
         }
       }
       console.log(lineProbsofClusters);
+      setLineProbsofEachCluster(lineProbsofClusters);
     }
   }, [hueCenters, clusterProbs, binsInfo, componentsNum, lines.length]);
 
