@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-29 16:20:09
+ * @LastEditTime: 2022-11-30 21:45:32
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -42,6 +42,24 @@ hueTemplates['I-Type'] = [360, 180, a1, a1];
 hueTemplates['Y-Type'] = [360, 180, a3, a1];
 hueTemplates['X-Type'] = [360, 180, a3, a3];
 
+function argMax(arr: number[]) {
+  if (arr.length === 0) {
+    return -1;
+  }
+
+  var max = arr[0];
+  var maxIndex = 0;
+
+  for (var i = 1; i < arr.length; i++) {
+    if (arr[i] > max) {
+      maxIndex = i;
+      max = arr[i];
+    }
+  }
+
+  return maxIndex;
+}
+
 
 function App() {
   const [lines, setLines] = useState<Line[]>([]);
@@ -50,7 +68,7 @@ function App() {
   const [clusters, setClusters] = useState<number[]>([]);
   const [hues, setHues] = useState<number[]>([]);
   const [binDensity, setBinDensity] = useState<number[][]>([]);
-  const [manifoldMethod, setManifoldMethod] = useState<string>('UMAP');
+  const [MMMethod, setMMMethod] = useState<string>('BMM');
   const [componentsNum, setComponentsNum] = useState<number | undefined>(undefined);
   const [hueCenters, setHueCenters] = useState<number[]>([]);
   const [clusterProbs, setClusterProbs] = useState<number[][]>([]);
@@ -69,9 +87,38 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (clusterProbs.length === 0) {
+      return;
+    }
+
     let dotProduct = (a: number[], b: number[]) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
     setHues(clusterProbs.map(clusterProb => dotProduct(clusterProb, hueCenters)));
-  }, [hueCenters, clusterProbs]);
+    if (componentsNum !== undefined && binsInfo.length > 0) {
+      console.log(binsInfo);
+      const lineProbsofClusters = Array(lines.length).fill(0).map(() => Array(componentsNum).fill(0));
+      for (let i = 0; i < binsInfo.length; ++i) {
+        const clusterLineSetForThisTime = [];
+
+        for (let k = 0; k < componentsNum; ++k) {
+          clusterLineSetForThisTime.push(new Set());
+        }
+
+        for (let j = 0; j < binsInfo[i].length; ++j) {
+          if (i * binsInfo[i].length + j < clusterProbs.length) {
+            const clusterOfThisBin = argMax(clusterProbs[i * binsInfo[i].length + j]);
+            const lineSet = binsInfo[i][j];
+            for (let lineID of lineSet) {
+              if (!clusterLineSetForThisTime[clusterOfThisBin].has(lineID)) {
+                lineProbsofClusters[lineID][clusterOfThisBin] += 1 / binsInfo.length;
+                clusterLineSetForThisTime[clusterOfThisBin].add(lineID);
+              }
+            }
+          }
+        }
+      }
+      console.log(lineProbsofClusters);
+    }
+  }, [hueCenters, clusterProbs, binsInfo, componentsNum, lines.length]);
 
   useEffect(() => {
     if (hueTemplateType !== 'N-Type') {
@@ -128,7 +175,7 @@ function App() {
     let hueCountMax = Math.max(...hueCount);
 
 
-    let bar = hueCount.map(v => Math.floor(v / hueCountMax * (bar_max - bar_min)) + bar_min); // random
+    let bar = hueCount.map(v => Math.floor(v / hueCountMax * (bar_max - bar_min)) + bar_min);
     //bar = new Array(360).fill(1).map(i => Math.floor(Math.random() * (bar_max - bar_min)) + bar_min);
 
 
@@ -437,29 +484,29 @@ function App() {
           <Sider width={300} theme="light" className="site-layout-background">
             <Divider>Parameters</Divider>
             {
-              /*  
-            <Row>
-              <Col span={12} className="item-text">Manifold Method:</Col>
-              <Col span={12}>
-                <Select defaultValue={manifoldMethod} style={{ width: 100 }} onChange={(value) => {
-                  axios.post('http://134.34.231.83:8080/set_manifold', {
-                    manifoldMethod: value
-                  })
-                    .then(function (response) {
-                      console.log(response);
-                    })
-                    .catch(function (error) {
-                      console.log(error);
-                    });
-                  setManifoldMethod(value);
-                }}>
-                  <Option value="UMAP">UMAP</Option>
-                  <Option value="t-SNE">t-SNE</Option>
-                  <Option value="LLE">LLE</Option>
-                </Select>
-              </Col>
-            </Row>
-            */
+
+              <Row>
+                <Col span={12} className="item-text">Type:</Col>
+                <Col span={12}>
+                  <Select defaultValue={MMMethod} style={{ width: 100 }} onChange={(value) => {
+                    // axios.post('http://134.34.231.83:8080/set_manifold', {
+                    //   MMMethod: value
+                    // })
+                    //   .then(function (response) {
+                    //     console.log(response);
+                    //   })
+                    //   .catch(function (error) {
+                    //     console.log(error);
+                    //   });
+                    setMMMethod(value);
+                  }}>
+                    <Option value="BMM">Binary</Option>
+                    <Option value="MMM">Categorical</Option>
+                    <Option value="GMM">Continues</Option>
+                  </Select>
+                </Col>
+              </Row>
+
             }
             <br />
             <Row>
@@ -469,7 +516,8 @@ function App() {
                   onChange={(value) => { setComponentsNum(value) }}
                   onPressEnter={(e) => {
                     axios.post('http://134.34.231.83:8080/set_GMM_components', {
-                      componentsNum: componentsNum
+                      componentsNum: componentsNum,
+                      method: MMMethod
                     })
                       .then(function (response) {
                         console.log(response);
@@ -524,6 +572,7 @@ function App() {
               action="http://134.34.231.83:8080/upload"
               withCredentials={true}
               method='post'
+              data={{ method: MMMethod }}
               beforeUpload={file => {
                 const fileName = file.name;
                 /*
@@ -602,7 +651,44 @@ function App() {
                     }
                   });
                 }*/
-                // Prevent upload
+
+
+                papa.parse(file, {
+                  header: true,
+                  dynamicTyping: true,
+                  complete: (results: papa.ParseResult<any>) => {
+                    function groupBy(xs: any[], key: string) {
+                      return xs.reduce(function (rv, x) {
+                        (rv[x[key]] = rv[x[key]] || []).push(x);
+                        return rv;
+                      }, {});
+                    };
+                    const data = results.data;
+                    const groupedData = groupBy(data, 'lineId');
+                    const lines: Line[] = [];
+                    let maxX = -Infinity;
+                    let maxY = -Infinity;
+                    let minX = Infinity;
+                    let minY = Infinity;
+                    for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
+                      const line: Line = rawLine.map((rawPoint: any) => {
+                        return {
+                          x: parseFloat(rawPoint.x),
+                          y: parseFloat(rawPoint.y)
+                        }
+                      })
+                      lines.push(line);
+                    }
+
+                    if (lines[lines.length - 1].length === 1) {
+                      lines.pop();
+                    }
+                    console.log(lines);
+                    setLines(lines);
+
+                  }
+                });
+
                 return true;
               }}
               onChange={info => {
