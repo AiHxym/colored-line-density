@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-29 12:55:35
- * @LastEditTime: 2022-11-01 12:43:38
+ * @LastEditTime: 2022-12-01 01:07:27
  * @LastEditors: Yumeng Xue
  * @Description: Render line density map for binning map
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -47,7 +47,7 @@ function rgb2hsl(r: number, g: number, b: number): [number, number, number] {
 }
 
 
-export function render(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t: number) => string, representVectors: number[][][], features: number[][], clusters: number[], hues: number[]): void {
+export function renderSketch(bins: BinningMap, canvas: HTMLCanvasElement, colorMap: (t: number) => string, representVectors: number[][][], features: number[][], clusters: number[], hues: number[]): void {
 
     const clusterColormaps = [d3.interpolateBlues, d3.interpolateGreens, d3.interpolateOranges, d3.interpolatePurples, d3.interpolateReds, d3.interpolateGreys];
     const clusterHues = [204, 28, 120, 359, 271, 10, 318, 0, 60, 185];

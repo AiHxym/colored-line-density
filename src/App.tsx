@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-11-30 22:04:53
+ * @LastEditTime: 2022-12-01 00:10:24
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -95,7 +95,7 @@ function App() {
     let dotProduct = (a: number[], b: number[]) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
     setHues(clusterProbs.map(clusterProb => dotProduct(clusterProb, hueCenters)));
     if (componentsNum !== undefined && binsInfo.length > 0) {
-      console.log(binsInfo);
+      //console.log(binsInfo);
       const lineProbsofClusters = Array(lines.length).fill(0).map(() => Array(componentsNum).fill(0));
       for (let i = 0; i < binsInfo.length; ++i) {
         const clusterLineSetForThisTime = [];
@@ -156,7 +156,7 @@ function App() {
       // hue mapping
       setHueCenters(getHueInTemplates(centers, ranges, hueCenters));
     }
-  }, [hueCenters, hueTemplateType]);
+  }, [hueTemplateType]);
 
   useEffect(() => {
     // Data
@@ -181,7 +181,7 @@ function App() {
     //bar = new Array(360).fill(1).map(i => Math.floor(Math.random() * (bar_max - bar_min)) + bar_min);
 
 
-    console.log(bar);
+    //console.log(bar);
 
     // dimensions and margins of the graph
     let margin = { top: 0, right: 0, bottom: 0, left: 0 },
@@ -522,7 +522,7 @@ function App() {
                       method: MMMethod
                     })
                       .then(function (response) {
-                        console.log(response);
+                        //console.log(response);
                         setClusterProbs(response.data.clusterProbs)
                         setHueCenters(response.data.hueCenters)
                         //setHues(response.data);
@@ -679,13 +679,24 @@ function App() {
                           y: parseFloat(rawPoint.y)
                         }
                       })
+                      maxX = Math.max(maxX, ...line.map(p => p.x));
+                      maxY = Math.max(maxY, ...line.map(p => p.y));
+                      minX = Math.min(minX, ...line.map(p => p.x));
+                      minY = Math.min(minY, ...line.map(p => p.y));
                       lines.push(line);
                     }
+                    for (let line of lines) {
+                      for (let point of line) {
+                        point.x = (point.x - minX) / (maxX - minX) * 999;
+                        point.y = (point.y - minY) / (maxY - minY) * 499;
+                      }
+                    }
+
 
                     if (lines[lines.length - 1].length === 1) {
                       lines.pop();
                     }
-                    console.log(lines);
+                    //console.log(lines);
                     setLines(lines);
 
                   }
@@ -719,7 +730,8 @@ function App() {
           </Sider>
           <Content>
             <Canvas binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines}
-              features={features} clusters={clusters} hues={hues} binsInfo={binsInfo}></Canvas>
+              features={features} clusters={clusters} hues={hues} binsInfo={binsInfo}
+              clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>

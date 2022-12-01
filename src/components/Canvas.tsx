@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-11-22 17:13:31
+ * @LastEditTime: 2022-12-01 02:11:59
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -11,14 +11,33 @@ import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import { binning, BinningMap } from '../core/binning';
 import { render } from '../core/render_plus';
+import { renderSketch } from '../core/renderer';
 import density, { LineData } from '../core/density';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
-import { bin, cluster, greatestIndex } from 'd3';
+import { bin, cluster, greatestIndex, line } from 'd3';
 import kmeans, { Distance, quickSilhouetteScore } from '../core/kmeans';
 
+
+function argMax(arr: number[]) {
+    if (arr.length === 0) {
+        return -1;
+    }
+
+    var max = arr[0];
+    var maxIndex = 0;
+
+    for (var i = 1; i < arr.length; i++) {
+        if (arr[i] > max) {
+            maxIndex = i;
+            max = arr[i];
+        }
+    }
+
+    return maxIndex;
+}
 
 
 interface CanvasProps {
@@ -29,6 +48,8 @@ interface CanvasProps {
     hues: number[];
     binDensity: number[][];
     binsInfo: BinningMap;
+    clusterProbs: number[][];
+    lineProbsofEachCluster: number[][];
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -44,39 +65,65 @@ export default function Canvas(props: CanvasProps) {
     const pickedGrid = new Set<string>();
 
 
+    // useEffect(() => {
+    //     const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+    //     const ctx = canvas.getContext("2d");
+    //     if (!ctx) {
+    //         throw new Error("Failed to get canvas context");
+    //     }
+    //     if (strokePickedGrid.size > 0) {
+    //         let pickedLines = new Set<number>();
+    //         for (let girdCoordinates of strokePickedGrid) {
+    //             const [x, y] = girdCoordinates.split(',').map(Number);
+    //             pickedLines = new Set([...pickedLines, ...props.binsInfo[x][y]]);
+    //         }
+
+    //         const width = canvas.width;
+    //         const height = canvas.height;
+    //         const binWidth = width / props.binsInfo.length;
+    //         const binHeight = height / props.binsInfo[0].length;
+
+    //         for (let i = 0; i < props.binsInfo.length; i++) {
+    //             for (let j = 0; j < props.binsInfo[0].length; j++) {
+    //                 const bin = props.binsInfo[i][j];
+    //                 if ((new Set([...pickedLines].filter((val: number) => bin.has(val)))).size > 0) {
+    //                     const binX = i * binWidth;
+    //                     const binY = (props.binsInfo[i].length - j) * binHeight;
+
+    //                     ctx.fillStyle = d3.interpolateOranges((bin.size / 20) * 0.7 + 0.3);
+    //                     ctx.fillRect(binX, binY, binWidth, binHeight);
+    //                 }
+
+    //             }
+    //         }
+    //     }
+    // }, [strokePickedGrid, props.binsInfo]);
+
     useEffect(() => {
-        const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-            throw new Error("Failed to get canvas context");
+        if (clickPoint) {
+            const selectedClusterId = argMax(props.clusterProbs[clickPoint[0] * 500 + 499 - clickPoint[1]]);
+            console.log(selectedClusterId);
+            //console.log(selectedClusterId);
+            const selectedLines = props.lines.filter((line, index) => props.lineProbsofEachCluster[index][selectedClusterId] > 0.1);
+            const bins = binning(selectedLines, { start: 0, stop: 1000, step: 1 }, { start: 0, stop: 500, step: 1 }, false, false);
+            const canvas = document.getElementById('extra') as HTMLCanvasElement;
+            renderSketch(bins, canvas, (d) => d3.interpolateMagma(d), [], [], [], []);
+            const svg = d3.select('#extra-renderer');
+            svg.selectAll('path').remove();
+            svg.selectAll('path')
+                .data(selectedLines)
+                .enter()
+                .append('path')
+                .attr('d', (d) => {
+                    return d3.line()(d.map((point) => [point.x, 499 - point.y]));
+                })
+                .attr('stroke', 'orange')
+                .attr('stroke-width', 1)
+                .attr('fill', 'none');
+            console.log(selectedLines);
+
         }
-        if (strokePickedGrid.size > 0) {
-            let pickedLines = new Set<number>();
-            for (let girdCoordinates of strokePickedGrid) {
-                const [x, y] = girdCoordinates.split(',').map(Number);
-                pickedLines = new Set([...pickedLines, ...props.binsInfo[x][y]]);
-            }
-
-            const width = canvas.width;
-            const height = canvas.height;
-            const binWidth = width / props.binsInfo.length;
-            const binHeight = height / props.binsInfo[0].length;
-
-            for (let i = 0; i < props.binsInfo.length; i++) {
-                for (let j = 0; j < props.binsInfo[0].length; j++) {
-                    const bin = props.binsInfo[i][j];
-                    if ((new Set([...pickedLines].filter((val: number) => bin.has(val)))).size > 0) {
-                        const binX = i * binWidth;
-                        const binY = (props.binsInfo[i].length - j) * binHeight;
-
-                        ctx.fillStyle = d3.interpolateOranges((bin.size / 20) * 0.7 + 0.3);
-                        ctx.fillRect(binX, binY, binWidth, binHeight);
-                    }
-
-                }
-            }
-        }
-    }, [strokePickedGrid, props.binsInfo]);
+    }, [clickPoint, clusterLabls, props.clusterProbs, props.lineProbsofEachCluster, props.lines]);
 
     /*
     useEffect(() => {
@@ -228,6 +275,7 @@ export default function Canvas(props: CanvasProps) {
                 onClick={(event) => {
                     const mouseX = event.nativeEvent.offsetX;
                     const mouseY = event.nativeEvent.offsetY;
+                    console.log(mouseX, mouseY);
                     setClickPoint([mouseX, mouseY]);
                 }}></canvas>
             {/*<svg id="plots" style={{
@@ -236,9 +284,8 @@ export default function Canvas(props: CanvasProps) {
                 width: '1600px',
                 height: '800px'
             }}></svg>*/}
-            <svg id="interaction-renderer" style={{
-                position: 'relative',
-                top: '-506px',
+            <canvas id="extra" width="1000" height="500"></canvas>
+            <svg id="extra-renderer" style={{
                 width: '1000px',
                 height: '500px',
                 pointerEvents: 'none'
