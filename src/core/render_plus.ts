@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2022-12-01 01:50:50
+ * @LastEditTime: 2023-01-01 20:34:50
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/render_plus.ts
@@ -9,7 +9,7 @@
 import * as d3 from "d3";
 import chroma from "chroma-js";
 
-export function render(binDensity: number[][], canvas: HTMLCanvasElement, colorMap: (t: number) => string, hues: number[]): void {
+export function render(binDensity: number[][], canvas: HTMLCanvasElement, binSize: number, colorMap: (t: number) => string, hues: number[]): void {
 
     const clusterColormaps = [d3.interpolateBlues, d3.interpolateGreens, d3.interpolateOranges, d3.interpolatePurples, d3.interpolateReds, d3.interpolateGreys];
     const clusterHues = [204, 28, 120, 359, 271, 10, 318, 0, 60, 185];
@@ -32,9 +32,9 @@ export function render(binDensity: number[][], canvas: HTMLCanvasElement, colorM
             if (binDensityValue === 0) {
                 binColor = "#ffffff";
             }
-            if (hues.length > 0 && hues[i * binDensity[0].length + j] !== undefined && binDensityValue > 0) {
+            if (hues.length > 0 && hues[Math.floor(i / binSize) * Math.round(binDensity[i].length / binSize) + Math.floor(j / binSize)] !== undefined && binDensityValue > 0) {
                 //console.log(i, j);
-                binColor = chroma.hcl(hues[i * binDensity[0].length + j], Math.pow(0.3 + (1.2 - 0.3) * binDensityValue, 1) * 100, Math.pow(0.95 - (0.95 - 0.2) * binDensityValue, 1.5) * 100).hex();
+                binColor = chroma.hcl(hues[Math.floor(i / binSize) * Math.round(binDensity[i].length / binSize) + Math.floor(j / binSize)], Math.pow(0.3 + (1.2 - 0.3) * binDensityValue, 1) * 100, Math.pow(0.95 - (0.95 - 0.2) * binDensityValue, 1.5) * 100).hex();
             }
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);

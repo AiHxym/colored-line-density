@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2022-12-01 02:11:59
+ * @LastEditTime: 2023-01-01 20:30:23
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -41,6 +41,9 @@ function argMax(arr: number[]) {
 
 
 interface CanvasProps {
+    width: number;
+    height: number;
+    binSize: number;
     lines: Line[];
     lowDimensionalLines: number[][];
     features: number[][];
@@ -236,7 +239,7 @@ export default function Canvas(props: CanvasProps) {
     useEffect(() => {
         if (props.binDensity.length > 0) {
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            render(props.binDensity, canvas, d3.interpolateMagma, props.hues);
+            render(props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
         }
     }, [props.binDensity, props.hues]);
 
@@ -244,7 +247,7 @@ export default function Canvas(props: CanvasProps) {
 
     return (
         <div className="canvas-container">
-            <canvas id="diagram" width="1000" height="500"
+            <canvas id="diagram" width={props.width} height={props.height}
                 onMouseDown={(event) => {
                     setIsMouseDown(true);
                 }}
@@ -257,8 +260,8 @@ export default function Canvas(props: CanvasProps) {
                         const mouseGridY = Math.floor(mouseY / 1);
                         for (let i = mouseGridX - Math.floor(strokeWidth / 2); i <= mouseGridX + Math.floor(strokeWidth / 2); ++i) {
                             for (let j = mouseGridY - Math.floor(strokeWidth / 2); j <= mouseGridY + Math.floor(strokeWidth / 2); ++j) {
-                                if (i >= 0 && i < 1000 && j >= 0 && j < 500) {
-                                    pickedGrid.add(i + ',' + (499 - j));
+                                if (i >= 0 && i < props.width && j >= 0 && j < props.height) {
+                                    pickedGrid.add(i + ',' + (props.height - 1 - j));
                                 }
                             }
                         }
@@ -284,10 +287,10 @@ export default function Canvas(props: CanvasProps) {
                 width: '1600px',
                 height: '800px'
             }}></svg>*/}
-            <canvas id="extra" width="1000" height="500"></canvas>
+            <canvas id="extra" width={props.width} height={props.height}></canvas>
             <svg id="extra-renderer" style={{
-                width: '1000px',
-                height: '500px',
+                width: props.width + 'px',
+                height: props.height + 'px',
                 pointerEvents: 'none'
             }}></svg>
         </div>

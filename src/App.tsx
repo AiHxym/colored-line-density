@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2022-12-01 00:10:24
+ * @LastEditTime: 2023-01-01 20:30:34
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -70,6 +70,9 @@ function App() {
   const [binDensity, setBinDensity] = useState<number[][]>([]);
   const [MMMethod, setMMMethod] = useState<string>('BMM');
   const [componentsNum, setComponentsNum] = useState<number | undefined>(undefined);
+  const [binSize, setBinSize] = useState<number>(1);
+  const [canvasWidth, setCanvasWidth] = useState<number>(1000);
+  const [canvasHeight, setCanvasHeight] = useState<number>(500);
   const [hueCenters, setHueCenters] = useState<number[]>([]);
   const [clusterProbs, setClusterProbs] = useState<number[][]>([]);
   const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
@@ -534,6 +537,26 @@ function App() {
               </Col>
             </Row>
             <br />
+            <Row>
+              <Col span={6} className="item-text">Resolution:</Col>
+              <Col span={18}>
+                <InputNumber style={{ width: 80 }} min={0} max={2000} defaultValue={1000} step={1}
+                  onChange={(value) => { setCanvasWidth(value) }} />
+                &nbsp; X &nbsp;
+                <InputNumber style={{ width: 80 }} min={0} max={2000} defaultValue={500} step={1}
+                  onChange={(value) => { setCanvasHeight(value) }} />
+
+              </Col>
+            </Row>
+            <br />
+            <Row>
+              <Col span={12} className="item-text">Grid Size:</Col>
+              <Col span={12}>
+                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={1} step={1}
+                  onChange={(value) => { setBinSize(value) }} />
+              </Col>
+            </Row>
+            <br />
             <div id='cluster-checkbox'>
               <Checkbox.Group style={{ 'width': '100%', }}
                 name='clusterCheckBox'
@@ -574,7 +597,7 @@ function App() {
               action="http://134.34.231.83:8080/upload"
               withCredentials={true}
               method='post'
-              data={{ method: MMMethod }}
+              data={{ method: MMMethod, width: canvasWidth, height: canvasHeight, binSize: binSize }}
               beforeUpload={file => {
                 const fileName = file.name;
                 /*
@@ -729,7 +752,8 @@ function App() {
             </Upload>
           </Sider>
           <Content>
-            <Canvas binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines}
+            <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
+              binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines}
               features={features} clusters={clusters} hues={hues} binsInfo={binsInfo}
               clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}></Canvas>
           </Content>
