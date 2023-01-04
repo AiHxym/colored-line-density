@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-01-01 20:30:34
+ * @LastEditTime: 2023-01-04 20:01:51
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -554,6 +554,25 @@ function App() {
               <Col span={12}>
                 <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={1} step={1}
                   onChange={(value) => { setBinSize(value) }} />
+              </Col>
+            </Row>
+            <br />
+            <Row>
+              <Col span={12} className="item-text">Epsilon:</Col>
+              <Col span={12}>
+                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={1} step={1}
+                  onChange={(value) => {
+                    axios.post('http://134.34.231.83:8080/1D_mode', {
+                      epsilon: value
+                    })
+                      .then(function (response) {
+                        console.log(response);
+                        //setHues(response.data);
+                      })
+                      .catch(function (error) {
+                        console.log(error);
+                      });
+                  }} />
               </Col>
             </Row>
             <br />
