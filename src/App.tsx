@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-01-05 01:17:21
+ * @LastEditTime: 2023-01-30 01:29:41
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -575,6 +575,24 @@ function App() {
                         console.log(error);
                       });
                   }} />
+              </Col>
+            </Row>
+            <br />
+            <Row>
+              <Col span={12} className="item-text">Direct MDS:</Col>
+              <Col span={12}>
+                <Checkbox onChange={() => {
+                  axios.post('http://134.34.231.83:8080/direct_overview', {
+                  })
+                    .then(function (response) {
+                      console.log(response);
+                      setHues(response.data.hues)
+                      //setHues(response.data);
+                    })
+                    .catch(function (error) {
+                      console.log(error);
+                    });
+                }}></Checkbox>
               </Col>
             </Row>
             <br />
