@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-01-01 20:30:23
+ * @LastEditTime: 2023-02-09 16:57:15
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -19,6 +19,7 @@ import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
 import { bin, cluster, greatestIndex, line } from 'd3';
 import kmeans, { Distance, quickSilhouetteScore } from '../core/kmeans';
+import axios from 'axios';
 
 
 function argMax(arr: number[]) {
@@ -53,6 +54,8 @@ interface CanvasProps {
     binsInfo: BinningMap;
     clusterProbs: number[][];
     lineProbsofEachCluster: number[][];
+    divideCluster: (x: number, y: number) => void;
+    setHues: (hues: number[]) => void;
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -104,6 +107,7 @@ export default function Canvas(props: CanvasProps) {
 
     useEffect(() => {
         if (clickPoint) {
+            /*
             const selectedClusterId = argMax(props.clusterProbs[clickPoint[0] * 500 + 499 - clickPoint[1]]);
             console.log(selectedClusterId);
             //console.log(selectedClusterId);
@@ -124,9 +128,11 @@ export default function Canvas(props: CanvasProps) {
                 .attr('stroke-width', 1)
                 .attr('fill', 'none');
             console.log(selectedLines);
+            */
+            props.divideCluster(clickPoint[0], clickPoint[1]);
 
         }
-    }, [clickPoint, clusterLabls, props.clusterProbs, props.lineProbsofEachCluster, props.lines]);
+    }, [clickPoint]);
 
     /*
     useEffect(() => {
@@ -178,7 +184,7 @@ export default function Canvas(props: CanvasProps) {
                 }
             }
             console.log(selectedCluster);
-
+    
             const silhouetteScores = [];
             for (let i = 2; i < 5; ++i) {
                 const KR = kmeans(selectedCluster.map(v => v.feature), i);
@@ -186,7 +192,7 @@ export default function Canvas(props: CanvasProps) {
             }
             const properK = silhouetteScores.indexOf(Math.max(...silhouetteScores)) + 2;
             const clusteringResult = kmeans(selectedCluster.map(v => v.feature), properK, "kmeans++");
-
+    
             const clickPointFeature = props.features[clickPoint[0] * clusterLabls[0].length + 799 - clickPoint[1]];
             let minDistanceToClickPoint = Infinity;
             let minDistanceToClickPointClusterId = -1;
@@ -197,7 +203,7 @@ export default function Canvas(props: CanvasProps) {
                     minDistanceToClickPointClusterId = i;
                 }
             }
-
+    
             console.log(clusteringResult);
             const newClusterLabls: number[][] = structuredClone(clusterLabls);
             for (let i = 0; i < clusterLabls.length; ++i) {
@@ -212,7 +218,7 @@ export default function Canvas(props: CanvasProps) {
                                 minDistanceToPointClusterId = k;
                             }
                         }
-
+    
                         if (minDistanceToPointClusterId === minDistanceToClickPointClusterId) {
                             newClusterLabls[i][j] = maxClusterId + 1;
                         } else {
@@ -279,7 +285,20 @@ export default function Canvas(props: CanvasProps) {
                     const mouseX = event.nativeEvent.offsetX;
                     const mouseY = event.nativeEvent.offsetY;
                     console.log(mouseX, mouseY);
+                    axios.post('http://134.34.231.83:8080/divied_cluster', {
+                        x: mouseX,
+                        y: 499 - mouseY,
+                    })
+                        .then(function (response) {
+                            console.log(response);
+                            props.setHues(response.data.hues)
+                            //setHues(response.data);
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
                     setClickPoint([mouseX, mouseY]);
+
                 }}></canvas>
             {/*<svg id="plots" style={{
                 position: 'relative',

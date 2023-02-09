@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-28 15:56:47
- * @LastEditTime: 2022-08-05 14:55:40
+ * @LastEditTime: 2023-02-08 14:51:02
  * @LastEditors: Yumeng Xue
  * @Description: Binning for lines
  * @FilePath: /trend-mixer/src/core/binning.ts

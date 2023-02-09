@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-01-30 01:29:41
+ * @LastEditTime: 2023-02-09 17:32:12
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -83,12 +83,19 @@ function App() {
   const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
+  const [clickPoint, setClickPoint] = useState<number[]>([]);
 
 
   useEffect(() => {
     axios.defaults.withCredentials = true;
     axios.get('http://134.34.231.83:8080/set_cookie');
   }, []);
+
+  useEffect(() => {
+    if (clickPoint.length > 0) {
+
+    }
+  }, [clickPoint]);
 
   useEffect(() => {
     if (clusterProbs.length === 0) {
@@ -579,7 +586,7 @@ function App() {
             </Row>
             <br />
             <Row>
-              <Col span={12} className="item-text">Direct MDS:</Col>
+              <Col span={12} className="item-text">Hierarchical dividing:</Col>
               <Col span={12}>
                 <Checkbox onChange={() => {
                   axios.post('http://134.34.231.83:8080/direct_overview', {
@@ -794,7 +801,11 @@ function App() {
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
               binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines}
               features={features} clusters={clusters} hues={hues} binsInfo={binsInfo}
-              clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}></Canvas>
+              clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}
+              setHues={(hues) => { setHues(hues) }}
+              divideCluster={(x, y) => {
+                setClickPoint([x, y]);
+              }}></Canvas>
           </Content>
         </Layout>
         <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>
