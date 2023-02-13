@@ -4979,6 +4979,11 @@ flat-cache@^3.0.4:
     flatted "^3.1.0"
     rimraf "^3.0.2"
 
+flatqueue@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/flatqueue/-/flatqueue-2.0.3.tgz#dd23673cb478e25d5a9acb9dcbb85c89e9e8e64e"
+  integrity sha512-RZCWZNkmxzUOh8jqEcEGZCycb3B8KAfpPwg3H//cURasunYxsg1eIvE+QDSjX+ZPHTIVfINfK1aLTrVKKO0i4g==
+
 flatted@^3.1.0:
   version "3.2.5"
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.5.tgz#76c8584f4fc843db64702a6bd04ab7a8bd666da3"
@@ -5285,6 +5290,11 @@ he@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
+
+heapify@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/heapify/-/heapify-0.6.0.tgz#d226094f57821c998dcbc5f2e7faab91fbcfe3fc"
+  integrity sha512-TeTASfpsbj7CndSUiFHHAcFLV1vbHkpBzoWT7Eonxq8Jxv5O0KQqv9P9sWF6h+R5vZ8126+pxB1EX8CZtOPduw==
 
 hoopy@^0.1.4:
   version "0.1.4"
