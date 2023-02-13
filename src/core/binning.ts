@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-28 15:56:47
- * @LastEditTime: 2023-02-13 10:52:52
+ * @LastEditTime: 2023-02-14 00:11:22
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/binning.ts
@@ -23,7 +23,7 @@ interface BinConfig {
 
 export type BinningMap = Set<number>[][];
 
-export function binning(lines: { times?: number[]; xValues?: number[]; yValues: number[] }[], binX: BinConfig, binY: BinConfig) {
+export function binning(lines: { times?: number[]; xValues: number[]; yValues: number[] }[], binX: BinConfig, binY: BinConfig) {
 
     const bins: BinningMap =
         new Array((binX.stop - binX.start) / binX.step)
@@ -32,7 +32,7 @@ export function binning(lines: { times?: number[]; xValues?: number[]; yValues: 
 
 
 
-    if (lines.length > 0 && lines[0].xValues) { // binning for 2D trajectory
+    if (lines.length > 0 && lines[0].times) { // binning for 2D trajectory
         for (let index = 0; index < lines.length; index++) {
             const line = lines[index] as { xValues: number[]; yValues: number[] };
             for (let i = 1; i < line.xValues.length; i++) {
@@ -72,10 +72,10 @@ export function binning(lines: { times?: number[]; xValues?: number[]; yValues: 
         }
     } else if (lines.length > 0) { // binning for 1D trajectory
         for (let index = 0; index < lines.length; index++) {
-            const line = lines[index] as { times: number[]; yValues: number[] };
-            for (let i = 1; i < line.times.length; i++) {
-                let t0 = line.times[i - 1];
-                let t1 = line.times[i];
+            const line = lines[index] as { xValues: number[]; yValues: number[] };
+            for (let i = 1; i < line.xValues.length; i++) {
+                let t0 = line.xValues[i - 1];
+                let t1 = line.xValues[i];
                 let y0 = line.yValues[i - 1];
                 let y1 = line.yValues[i];
                 let interT = [t0];

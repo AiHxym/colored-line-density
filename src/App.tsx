@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-09 17:32:12
+ * @LastEditTime: 2023-02-14 00:24:14
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -22,7 +22,8 @@ import * as d3 from 'd3';
 
 import './App.css';
 import { RcFile } from 'antd/lib/upload';
-import { BinningMap } from './core/binning';
+import { BinningMap, binning, normalizeData } from './core/binning';
+import { samplingAggregate, clusterDivision, getNearestClusterNodeId, getHues } from './core/sampling-aggregate'
 
 const { TabPane } = Tabs;
 const { Header, Footer, Sider, Content } = Layout;
@@ -41,6 +42,62 @@ hueTemplates['Lm-Type'] = [360, 270, a1, a2];
 hueTemplates['I-Type'] = [360, 180, a1, a1];
 hueTemplates['Y-Type'] = [360, 180, a3, a1];
 hueTemplates['X-Type'] = [360, 180, a3, a3];
+
+const hueMapping = (C: number, R: number, init_H: number[]) => {
+  let sigma = 1;
+  let new_H = new Array(init_H.length).fill(0);
+  init_H.forEach((h, i) => {
+    let d = C - h;
+    let flag = true;
+    let x = d;
+    if (d < 0 && Math.abs(d) > 180) { x = 360 - Math.abs(d); }  // angle restrict within 180
+    if (d >= 0 && Math.abs(d) > 180) { x = 360 - Math.abs(d); flag = false; }
+    if (d >= 0 && Math.abs(d) <= 180) { x = d; }
+    if (d < 0 && Math.abs(d) <= 180) { flag = false; }
+    if (Math.abs(x) <= R / 2) { new_H[i] = h; }
+    else {
+      x = x / 180;
+      let gaussian = Math.exp(-Math.pow((x) / sigma, 2.0) / 2.0) / Math.sqrt(2 * Math.PI);
+      let shift = Math.floor((1 - gaussian) * R / 2);
+      // console.log('shift:', shift)
+      if (flag) { new_H[i] = (C - shift + 360) % 360; }
+      else { new_H[i] = (C + shift) % 360; }
+    }
+  })
+  // console.log(new_H)
+  return new_H;
+}
+
+const getHueInTemplates = (C: number[], R: number[], init_H: number[]) => {
+  // only one sector
+  if (C.length === 1) {
+    return hueMapping(C[0], R[0], init_H);
+  }
+  // two sectors
+  else {
+    let sector1: number[] = [];
+    let sector2: number[] = [];
+    let indexes: number[] = [];
+    // split by distances to the centers of each sector
+    init_H.forEach((h, i) => {
+      let d1 = Math.abs(C[0] - h);
+      let d2 = Math.abs(C[1] - h);
+      if (d1 > 180) { d1 = 360 - d1; }
+      if (d2 > 180) { d2 = 360 - d2; }
+      if (d1 <= d2) { sector1.push(h); indexes.push(0); }
+      else { sector2.push(h); indexes.push(1); }
+    })
+    // hue mapping for each sector
+    let sector1_h = hueMapping(C[0], R[0], sector1);
+    let sector2_h = hueMapping(C[1], R[1], sector2);
+    let new_H = new Array(init_H.length).fill(0);
+    indexes.forEach((idx, i) => {
+      if (idx == 0) { new_H[i] = sector1_h.shift(); }
+      else { new_H[i] = sector2_h.shift(); }
+    })
+    return new_H;
+  }
+}
 
 function argMax(arr: number[]) {
   if (arr.length === 0) {
@@ -62,7 +119,7 @@ function argMax(arr: number[]) {
 
 
 function App() {
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<{ times?: number[], xValues: number[], yValues: number[] }[]>([]);
   const [lowDimensionalLines, setLowDimensionalLines] = useState<number[][]>([]);
   const [features, setFeatures] = useState<number[][]>([]);
   const [clusters, setClusters] = useState<number[]>([]);
@@ -87,15 +144,19 @@ function App() {
 
 
   useEffect(() => {
+    const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
+    const [hc, lineSet] = samplingAggregate(bins);
+    console.log(lineSet);
+    console.log(hc);
+
+
+  }, [binSize, canvasHeight, canvasWidth, lines]);
+
+
+  useEffect(() => {
     axios.defaults.withCredentials = true;
     axios.get('http://134.34.231.83:8080/set_cookie');
   }, []);
-
-  useEffect(() => {
-    if (clickPoint.length > 0) {
-
-    }
-  }, [clickPoint]);
 
   useEffect(() => {
     if (clusterProbs.length === 0) {
@@ -405,61 +466,6 @@ function App() {
     const getHueByPos = (X: number, Y: number) => getAngle(0, -100, X, Y)
   }, [hueCenters, clusterProbs, hues, binDensity, hueTemplateType, hueTemplateRotation, hueTemplateDomain]);
 
-  const hueMapping = (C: number, R: number, init_H: number[]) => {
-    let sigma = 1;
-    let new_H = new Array(init_H.length).fill(0);
-    init_H.forEach((h, i) => {
-      let d = C - h;
-      let flag = true;
-      let x = d;
-      if (d < 0 && Math.abs(d) > 180) { x = 360 - Math.abs(d); }  // angle restrict within 180
-      if (d >= 0 && Math.abs(d) > 180) { x = 360 - Math.abs(d); flag = false; }
-      if (d >= 0 && Math.abs(d) <= 180) { x = d; }
-      if (d < 0 && Math.abs(d) <= 180) { flag = false; }
-      if (Math.abs(x) <= R / 2) { new_H[i] = h; }
-      else {
-        x = x / 180;
-        let gaussian = Math.exp(-Math.pow((x) / sigma, 2.0) / 2.0) / Math.sqrt(2 * Math.PI);
-        let shift = Math.floor((1 - gaussian) * R / 2);
-        // console.log('shift:', shift)
-        if (flag) { new_H[i] = (C - shift + 360) % 360; }
-        else { new_H[i] = (C + shift) % 360; }
-      }
-    })
-    // console.log(new_H)
-    return new_H;
-  }
-
-  const getHueInTemplates = (C: number[], R: number[], init_H: number[]) => {
-    // only one sector
-    if (C.length === 1) {
-      return hueMapping(C[0], R[0], init_H);
-    }
-    // two sectors
-    else {
-      let sector1: number[] = [];
-      let sector2: number[] = [];
-      let indexes: number[] = [];
-      // split by distances to the centers of each sector
-      init_H.forEach((h, i) => {
-        let d1 = Math.abs(C[0] - h);
-        let d2 = Math.abs(C[1] - h);
-        if (d1 > 180) { d1 = 360 - d1; }
-        if (d2 > 180) { d2 = 360 - d2; }
-        if (d1 <= d2) { sector1.push(h); indexes.push(0); }
-        else { sector2.push(h); indexes.push(1); }
-      })
-      // hue mapping for each sector
-      let sector1_h = hueMapping(C[0], R[0], sector1);
-      let sector2_h = hueMapping(C[1], R[1], sector2);
-      let new_H = new Array(init_H.length).fill(0);
-      indexes.forEach((idx, i) => {
-        if (idx == 0) { new_H[i] = sector1_h.shift(); }
-        else { new_H[i] = sector2_h.shift(); }
-      })
-      return new_H;
-    }
-  }
 
   useEffect(() => {
     ifShowedCluster.forEach((show, i) => {
@@ -495,55 +501,6 @@ function App() {
         <Layout>
           <Sider width={300} theme="light" className="site-layout-background">
             <Divider>Parameters</Divider>
-            {
-
-              <Row>
-                <Col span={12} className="item-text">Type:</Col>
-                <Col span={12}>
-                  <Select defaultValue={MMMethod} style={{ width: 100 }} onChange={(value) => {
-                    // axios.post('http://134.34.231.83:8080/set_manifold', {
-                    //   MMMethod: value
-                    // })
-                    //   .then(function (response) {
-                    //     console.log(response);
-                    //   })
-                    //   .catch(function (error) {
-                    //     console.log(error);
-                    //   });
-                    setMMMethod(value);
-                  }}>
-                    <Option value="BMM">Binary</Option>
-                    <Option value="MMM">Categorical</Option>
-                    <Option value="GMM">Continues</Option>
-                  </Select>
-                </Col>
-              </Row>
-
-            }
-            <br />
-            <Row>
-              <Col span={12} className="item-text">GMM Components:</Col>
-              <Col span={12}>
-                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={undefined} step={1}
-                  onChange={(value) => { setComponentsNum(value) }}
-                  onPressEnter={(e) => {
-                    axios.post('http://134.34.231.83:8080/set_GMM_components', {
-                      componentsNum: componentsNum,
-                      method: MMMethod
-                    })
-                      .then(function (response) {
-                        //console.log(response);
-                        setClusterProbs(response.data.clusterProbs)
-                        setHueCenters(response.data.hueCenters)
-                        //setHues(response.data);
-                      })
-                      .catch(function (error) {
-                        console.log(error);
-                      });
-                  }} />
-              </Col>
-            </Row>
-            <br />
             <Row>
               <Col span={6} className="item-text">Resolution:</Col>
               <Col span={18}>
@@ -561,27 +518,6 @@ function App() {
               <Col span={12}>
                 <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={1} step={1}
                   onChange={(value) => { setBinSize(value) }} />
-              </Col>
-            </Row>
-            <br />
-            <Row>
-              <Col span={12} className="item-text">Epsilon:</Col>
-              <Col span={12}>
-                <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={1} step={1}
-                  onChange={(value) => {
-                    axios.post('http://134.34.231.83:8080/1D_mode', {
-                      epsilon: value
-                    })
-                      .then(function (response) {
-                        console.log(response);
-                        setClusterProbs(response.data.clusterProbs)
-                        setHueCenters(response.data.hueCenters)
-                        //setHues(response.data);
-                      })
-                      .catch(function (error) {
-                        console.log(error);
-                      });
-                  }} />
               </Col>
             </Row>
             <br />
@@ -640,156 +576,82 @@ function App() {
             <Upload
               accept=".csv"
               showUploadList={false}
-              action="http://134.34.231.83:8080/upload"
               withCredentials={true}
               method='post'
-              data={{ method: MMMethod, width: canvasWidth, height: canvasHeight, binSize: binSize }}
               beforeUpload={file => {
-                const fileName = file.name;
-                /*
-                if (fileName === "representation.csv") {
-                  papa.parse(file, {
-                    header: false,
-                    complete: (results: papa.ParseResult<any>) => {
-                      const data = results.data;
-                      setLowDimensionalLines(data);
-                    }
-                  });
-                } else if (fileName === "features.csv") {
-                  papa.parse(file, {
-                    header: false,
-                    dynamicTyping: true,
-                    complete: (results: papa.ParseResult<any>) => {
-                      const data = results.data;
-                      if (data.length < 1280000) {
-                        for (let i = data.length; i < 1280000; ++i) {
-                          data.push(new Array(data[0].length).fill(0));
-                        }
-                      }
-                      setFeatures(data);
-                    }
-                  });
-                } else if (fileName === "clusters.csv") {
-                  papa.parse(file, {
-                    header: false,
-                    dynamicTyping: true,
-                    complete: (results: papa.ParseResult<any>) => {
-                      const data = results.data;
-                      setClusters(data.map(d => d[0]));
-                    }
-                  });
-                } else if (fileName === "hues.csv") {
-                  papa.parse(file, {
-                    header: false,
-                    dynamicTyping: true,
-                    complete: (results: papa.ParseResult<any>) => {
-                      const data = results.data;
-                      setHues(data.map(d => d[0]));
-                    }
-                  });
-                } else {
-
-                  papa.parse(file, {
-                    header: true,
-                    dynamicTyping: true,
-                    complete: (results: papa.ParseResult<any>) => {
-                      function groupBy(xs: any[], key: string) {
-                        return xs.reduce(function (rv, x) {
-                          (rv[x[key]] = rv[x[key]] || []).push(x);
-                          return rv;
-                        }, {});
-                      };
-                      const data = results.data;
-                      const groupedData = groupBy(data, 'lineId');
-                      const lines: Line[] = [];
-                      let maxX = -Infinity;
-                      let maxY = -Infinity;
-                      let minX = Infinity;
-                      let minY = Infinity;
-                      for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
-                        const line: Line = rawLine.map((rawPoint: any) => {
-                          return {
-                            x: parseFloat(rawPoint.x),
-                            y: parseFloat(rawPoint.y)
-                          }
-                        })
-                        lines.push(line);
-                      }
-                    
-                      console.log(lines);
-                      setLines(lines);
-
-                    }
-                  });
-                }*/
-
-
                 papa.parse(file, {
                   header: true,
                   dynamicTyping: true,
                   complete: (results: papa.ParseResult<any>) => {
+
                     function groupBy(xs: any[], key: string) {
                       return xs.reduce(function (rv, x) {
                         (rv[x[key]] = rv[x[key]] || []).push(x);
                         return rv;
                       }, {});
                     };
+
                     const data = results.data;
                     const groupedData = groupBy(data, 'lineId');
-                    const lines: Line[] = [];
-                    let maxX = -Infinity;
-                    let maxY = -Infinity;
-                    let minX = Infinity;
-                    let minY = Infinity;
-                    for (let rawLine of Object.values(groupedData) as { lineId: number; x: string; y: string }[][]) {
-                      const line: Line = rawLine.map((rawPoint: any) => {
-                        return {
-                          x: parseFloat(rawPoint.x),
-                          y: parseFloat(rawPoint.y)
+                    const lines: { times?: number[]; xValues: number[]; yValues: number[]; }[] = [];
+
+                    let xMin = Infinity;
+                    let xMax = -Infinity;
+                    let yMin = Infinity;
+                    let yMax = -Infinity;
+
+                    for (let rawLine of Object.values(groupedData) as { lineId: number; time?: string; x: string; y: string }[][]) {
+                      if (rawLine[0].time) {
+                        (rawLine as { lineId: number; time: string; x: string; y: string }[]).sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
+                      } else {
+                        rawLine.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
+                      }
+
+
+                      if (rawLine[0].x) {
+                        const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
+                        for (let i = 0; i < rawLine.length; ++i) {
+                          line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
+                          line.xValues.push(parseFloat(rawLine[i].x));
+                          line.yValues.push(parseFloat(rawLine[i].y));
                         }
-                      })
-                      maxX = Math.max(maxX, ...line.map(p => p.x));
-                      maxY = Math.max(maxY, ...line.map(p => p.y));
-                      minX = Math.min(minX, ...line.map(p => p.x));
-                      minY = Math.min(minY, ...line.map(p => p.y));
-                      lines.push(line);
-                    }
-                    for (let line of lines) {
-                      for (let point of line) {
-                        point.x = (point.x - minX) / (maxX - minX) * 999;
-                        point.y = (point.y - minY) / (maxY - minY) * 499;
+                        xMin = Math.min(xMin, ...line.xValues);
+                        xMax = Math.max(xMax, ...line.xValues);
+                        yMin = Math.min(yMin, ...line.yValues);
+                        yMax = Math.max(yMax, ...line.yValues);
+                        lines.push(line);
+                      } else {
+                        const line: { xValues: number[], yValues: number[] } = { xValues: [], yValues: [] };
+                        for (let i = 0; i < rawLine.length; ++i) {
+                          line.xValues.push(parseFloat(rawLine[i].x));
+                          line.yValues.push(parseFloat(rawLine[i].y));
+                        }
+                        xMin = Math.min(xMin, ...line.xValues);
+                        xMax = Math.max(xMax, ...line.xValues);
+                        yMin = Math.min(yMin, ...line.yValues);
+                        yMax = Math.max(yMax, ...line.yValues);
+                        lines.push(line);
                       }
                     }
 
-
-                    if (lines[lines.length - 1].length === 1) {
+                    if (lines[lines.length - 1].xValues.length <= 1) {
                       lines.pop();
                     }
+
+                    // normalize data
+                    for (let line of lines) {
+                      line.xValues = line.xValues.map(x => (x - xMin) / (xMax - xMin) * canvasWidth);
+                      line.yValues = line.yValues.map(y => (y - yMin) / (yMax - yMin) * canvasHeight);
+                    }
+
+
                     //console.log(lines);
                     setLines(lines);
-
                   }
+
                 });
 
-                return true;
-              }}
-              onChange={info => {
-                const { status } = info.file;
-                if (status !== 'uploading') {
-                  console.log(info.file, info.fileList);
-                  setBinDensity(info.file.response.densityMap);
-                  for (let i = 0; i < info.file.response.bins.length; ++i) {
-                    for (let j = 0; j < info.file.response.bins[i].length; ++j) {
-                      info.file.response.bins[i][j] = new Set(info.file.response.bins[i][j]);
-                    }
-                  }
-                  setBinsInfo(info.file.response.bins);
-                }
-                if (status === 'done') {
-                  console.log(`${info.file.name} file uploaded successfully.`);
-                } else if (status === 'error') {
-                  console.log(`${info.file.name} file upload failed.`);
-                }
+                return false;
               }}
             >
               <Button type="default" block icon={<UploadOutlined />}>

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-13 10:40:11
+ * @LastEditTime: 2023-02-14 00:16:02
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -10,9 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
 import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
 import { binning, BinningMap } from '../core/binning';
-import { render } from '../core/render';
-import { renderSketch } from '../core/renderer';
-import density, { LineData } from '../core/density';
+import { render } from '../core/renderer';
 import { computeAllMaximalGroups } from "../core/trend-detector"
 import { getKDE } from '../core/kde';
 import * as PCA from '../core/PCA';
@@ -45,7 +43,7 @@ interface CanvasProps {
     width: number;
     height: number;
     binSize: number;
-    lines: Line[];
+    lines: any[];
     lowDimensionalLines: number[][];
     features: number[][];
     clusters: number[];

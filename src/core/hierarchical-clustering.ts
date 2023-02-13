@@ -66,76 +66,77 @@ export class Hierarchical {
                 distances[dKeyStr] = overlapCoefficientDistance(nodes[i].aggregateSet, nodes[j].aggregateSet);
                 priorityQueue.push(dKey, distances[dKeyStr]);
             }
-
-            while (nodes.length > this.k) {
-                let minDist = Infinity;
-                let closestPart: [number, number] = [-1, -1]; // 表示最相似的两个聚类
-                while (priorityQueue.length > 0) {
-                    const paired = [false, false];
-                    minDist = priorityQueue.peekValue() as number;
-                    const closestPartId = priorityQueue.pop() as [number, number];
-                    for (let i = 0; i < nodes.length; i++) {
-                        if (nodes[i].id === closestPartId[0]) {
-                            paired[0] = true;
-                            closestPart[0] = i;
-                        } else if (nodes[i].id === closestPartId[1]) {
-                            paired[1] = true;
-                            closestPart[1] = i;
-                        }
-                    }
-                    if (paired[0] && paired[1]) {
-                        break;
-                    }
-                }
-
-                // 合并两个聚类
-                const [part1, part2] = closestPart;
-                const [node1, node2] = [nodes[part1], nodes[part2]];
-                const new_node = new ClusterNode(
-                    union(node1.aggregateSet, node2.aggregateSet),
-                    node1,
-                    node2,
-                    minDist,
-                    currentClustId,
-                    node1.count + node2.count,
-                    node1.binIdList.concat(node2.binIdList)
-                );
-                currentClustId -= 1;
-                nodes.splice(part2, 1);
-                nodes.splice(part1, 1); // 一定要先del索引较大的
-
-                for (let i = 0; i < nodes.length; i++) {
-                    const dKey = [nodes[i].id, new_node.id];
-                    const dKeyStr = `${nodes[i].id},${new_node.id}`;
-                    distances[dKeyStr] = overlapCoefficientDistance(nodes[i].aggregateSet, new_node.aggregateSet);
-                    priorityQueue.push(dKey, distances[dKeyStr]);
-                }
-
-                for (let i = 0; i < nodes.length; i++) {
-                    const dKey = [nodes[i].id, new_node.id];
-                    const dKeyStr = `${nodes[i].id},${new_node.id}`;
-                    let accumulateDist = 0;
-                    if (new_node.left !== null) {
-                        let subDKeyStr = `${nodes[i].id},${new_node.left.id}`;
-                        if (!(subDKeyStr in distances)) {
-                            subDKeyStr = `${new_node.left.id},${nodes[i].id}`;
-                        }
-                        accumulateDist += distances[subDKeyStr] * nodes[i].binIdList.length * new_node.left.binIdList.length;
-                    }
-                    if (new_node.right !== null) {
-                        let subDKeyStr = `${nodes[i].id},${new_node.right.id}`;
-                        if (!(subDKeyStr in distances)) {
-                            subDKeyStr = `${new_node.right.id},${nodes[i].id}`;
-                        }
-                        accumulateDist += distances[subDKeyStr] * nodes[i].binIdList.length * new_node.right.binIdList.length;
-                    }
-                    distances[dKeyStr] = accumulateDist / (nodes[i].binIdList.length + new_node.binIdList.length);
-                    priorityQueue.push(dKey, distances[dKeyStr]);
-                }
-
-                nodes.push(new_node);
-            }
         }
+
+        while (nodes.length > this.k) {
+            let minDist = Infinity;
+            let closestPart: [number, number] = [-1, -1]; // 表示最相似的两个聚类
+            while (priorityQueue.length > 0) {
+                const paired = [false, false];
+                minDist = priorityQueue.peekValue() as number;
+                const closestPartId = priorityQueue.pop() as [number, number];
+                for (let i = 0; i < nodes.length; i++) {
+                    if (nodes[i].id === closestPartId[0]) {
+                        paired[0] = true;
+                        closestPart[0] = i;
+                    } else if (nodes[i].id === closestPartId[1]) {
+                        paired[1] = true;
+                        closestPart[1] = i;
+                    }
+                }
+                if (paired[0] && paired[1]) {
+                    break;
+                }
+            }
+
+            // 合并两个聚类
+            const [part1, part2] = closestPart;
+            const [node1, node2] = [nodes[part1], nodes[part2]];
+            const new_node = new ClusterNode(
+                union(node1.aggregateSet, node2.aggregateSet),
+                node1,
+                node2,
+                minDist,
+                currentClustId,
+                node1.count + node2.count,
+                node1.binIdList.concat(node2.binIdList)
+            );
+            currentClustId -= 1;
+            nodes.splice(part2, 1);
+            nodes.splice(part1, 1); // 一定要先del索引较大的
+
+            for (let i = 0; i < nodes.length; i++) {
+                const dKey = [nodes[i].id, new_node.id];
+                const dKeyStr = `${nodes[i].id},${new_node.id}`;
+                distances[dKeyStr] = overlapCoefficientDistance(nodes[i].aggregateSet, new_node.aggregateSet);
+                priorityQueue.push(dKey, distances[dKeyStr]);
+            }
+
+            for (let i = 0; i < nodes.length; i++) {
+                const dKey = [nodes[i].id, new_node.id];
+                const dKeyStr = `${nodes[i].id},${new_node.id}`;
+                let accumulateDist = 0;
+                if (new_node.left !== null) {
+                    let subDKeyStr = `${nodes[i].id},${new_node.left.id}`;
+                    if (!(subDKeyStr in distances)) {
+                        subDKeyStr = `${new_node.left.id},${nodes[i].id}`;
+                    }
+                    accumulateDist += distances[subDKeyStr] * nodes[i].binIdList.length * new_node.left.binIdList.length;
+                }
+                if (new_node.right !== null) {
+                    let subDKeyStr = `${nodes[i].id},${new_node.right.id}`;
+                    if (!(subDKeyStr in distances)) {
+                        subDKeyStr = `${new_node.right.id},${nodes[i].id}`;
+                    }
+                    accumulateDist += distances[subDKeyStr] * nodes[i].binIdList.length * new_node.right.binIdList.length;
+                }
+                distances[dKeyStr] = accumulateDist / (nodes[i].binIdList.length + new_node.binIdList.length);
+                priorityQueue.push(dKey, distances[dKeyStr]);
+            }
+
+            nodes.push(new_node);
+        }
+
         this.nodes = nodes;
     }
 }
