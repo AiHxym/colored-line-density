@@ -282,19 +282,6 @@ export default function Canvas(props: CanvasProps) {
                 onClick={(event) => {
                     const mouseX = event.nativeEvent.offsetX;
                     const mouseY = event.nativeEvent.offsetY;
-                    console.log(mouseX, mouseY);
-                    axios.post('http://134.34.231.83:8080/divied_cluster', {
-                        x: mouseX,
-                        y: 499 - mouseY,
-                    })
-                        .then(function (response) {
-                            console.log(response);
-                            props.setHues(response.data.hues)
-                            //setHues(response.data);
-                        })
-                        .catch(function (error) {
-                            console.log(error);
-                        });
                     setClickPoint([mouseX, mouseY]);
 
                 }}></canvas>

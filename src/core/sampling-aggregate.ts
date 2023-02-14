@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-02-13 16:57:48
+ * @LastEditTime: 2023-02-14 10:55:31
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -24,7 +24,7 @@ function getRandomSubarray(arr: any[], size: number) {
     return shuffled.slice(min);
 }
 
-export function samplingAggregate(bins: Set<number>[][], samplingRate = 0.05, minDensity = 8) {
+export function samplingAggregate(bins: Set<number>[][], samplingRate = 0.05, minDensity = 8): [Hierarchical, Set<number>] {
     let lineSet = new Set<number>();
     const flattenBins: [[number, number], Set<number>][] = [];
     for (let i = 0; i < bins.length; i++) {
@@ -137,7 +137,7 @@ export function getNearestClusterNodeId(bin: Set<number>, hc: Hierarchical) {
     return hc.nodes[minIndex].id;
 }
 
-export function getHues(bins: Set<number>[][], hc: Hierarchical, line_set: Set<number>[]): number[] {
+export function getHues(bins: Set<number>[][], hc: Hierarchical): number[] {
     const hues = new Array(bins.length * bins[0].length).fill(0);
     if (hc.nodes.length <= 1) {
         const flattenBins: [[number, number], Set<number>][] = [];

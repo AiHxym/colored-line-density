@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-14 10:09:17
+ * @LastEditTime: 2023-02-14 12:21:44
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -24,6 +24,7 @@ import './App.css';
 import { RcFile } from 'antd/lib/upload';
 import { BinningMap, binning, normalizeData } from './core/binning';
 import { samplingAggregate, clusterDivision, getNearestClusterNodeId, getHues } from './core/sampling-aggregate'
+import { Hierarchical } from './core/hierarchical-clustering'
 
 const { TabPane } = Tabs;
 const { Header, Footer, Sider, Content } = Layout;
@@ -141,14 +142,25 @@ function App() {
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
   const [clickPoint, setClickPoint] = useState<number[]>([]);
-
+  const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
+  const [lineSet, setLineSet] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
-    const [hc, lineSet] = samplingAggregate(bins, 0.1);
-    console.log(lineSet);
-    console.log(hc);
+    setBinsInfo(bins);
+    const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size))));
+    const binDensity = bins.map(binCol => binCol.map(bin => bin.size / binDensityMax));
 
+    setBinDensity(binDensity);
+    const [hc, lineSet] = samplingAggregate(bins, 0.1);
+
+    if (hc.nodes.length === 0) {
+      return;
+    }
+    setHC(hc);
+    setLineSet(lineSet);
+    const hues = getHues(bins, hc);
+    setHues(hues);
 
   }, [binSize, canvasHeight, canvasWidth, lines]);
 
@@ -519,18 +531,7 @@ function App() {
             <Row>
               <Col span={12} className="item-text">Hierarchical dividing:</Col>
               <Col span={12}>
-                <Checkbox onChange={() => {
-                  axios.post('http://134.34.231.83:8080/direct_overview', {
-                  })
-                    .then(function (response) {
-                      console.log(response);
-                      setHues(response.data.hues)
-                      //setHues(response.data);
-                    })
-                    .catch(function (error) {
-                      console.log(error);
-                    });
-                }}></Checkbox>
+
               </Col>
             </Row>
             <br />
@@ -661,7 +662,11 @@ function App() {
               clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}
               setHues={(hues) => { setHues(hues) }}
               divideCluster={(x, y) => {
-                setClickPoint([x, y]);
+                const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
+                console.log(nearestClusterId);
+                clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
+                const hues = getHues(binsInfo, hc as Hierarchical);
+                setHues(hues);
               }}></Canvas>
           </Content>
         </Layout>
