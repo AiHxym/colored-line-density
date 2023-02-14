@@ -108,13 +108,6 @@ export class Hierarchical {
             for (let i = 0; i < nodes.length; i++) {
                 const dKey = [nodes[i].id, new_node.id];
                 const dKeyStr = `${nodes[i].id},${new_node.id}`;
-                distances[dKeyStr] = overlapCoefficientDistance(nodes[i].aggregateSet, new_node.aggregateSet);
-                priorityQueue.push(dKey, distances[dKeyStr]);
-            }
-
-            for (let i = 0; i < nodes.length; i++) {
-                const dKey = [nodes[i].id, new_node.id];
-                const dKeyStr = `${nodes[i].id},${new_node.id}`;
                 let accumulateDist = 0;
                 if (new_node.left !== null) {
                     let subDKeyStr = `${nodes[i].id},${new_node.left.id}`;
@@ -130,7 +123,7 @@ export class Hierarchical {
                     }
                     accumulateDist += distances[subDKeyStr] * nodes[i].binIdList.length * new_node.right.binIdList.length;
                 }
-                distances[dKeyStr] = accumulateDist / (nodes[i].binIdList.length + new_node.binIdList.length);
+                distances[dKeyStr] = accumulateDist / (nodes[i].binIdList.length * new_node.binIdList.length);
                 priorityQueue.push(dKey, distances[dKeyStr]);
             }
 

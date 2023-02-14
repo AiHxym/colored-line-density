@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-14 00:24:14
+ * @LastEditTime: 2023-02-14 10:09:17
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -145,18 +145,13 @@ function App() {
 
   useEffect(() => {
     const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
-    const [hc, lineSet] = samplingAggregate(bins);
+    const [hc, lineSet] = samplingAggregate(bins, 0.1);
     console.log(lineSet);
     console.log(hc);
 
 
   }, [binSize, canvasHeight, canvasWidth, lines]);
 
-
-  useEffect(() => {
-    axios.defaults.withCredentials = true;
-    axios.get('http://134.34.231.83:8080/set_cookie');
-  }, []);
 
   useEffect(() => {
     if (clusterProbs.length === 0) {
