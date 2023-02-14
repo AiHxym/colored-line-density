@@ -1,24 +1,15 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-14 00:16:02
+ * @LastEditTime: 2023-02-14 13:45:03
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
  */
 import React, { useEffect, useState } from 'react';
-import { ImportamceLine, Line, SegmentedLineDepth } from '../core/defs/line';
-import { calculateAllLineBandDepth, calculateImportanceLinesWithResampling, resampleLines, calculateSegmentedDataDepth } from '../core/utils';
-import { binning, BinningMap } from '../core/binning';
+import { BinningMap } from '../core/binning';
 import { render } from '../core/renderer';
-import { computeAllMaximalGroups } from "../core/trend-detector"
-import { getKDE } from '../core/kde';
-import * as PCA from '../core/PCA';
 import * as d3 from 'd3';
-import { bin, cluster, greatestIndex, line } from 'd3';
-import kmeans, { Distance, quickSilhouetteScore } from '../core/kmeans';
-import axios from 'axios';
-
 
 function argMax(arr: number[]) {
     if (arr.length === 0) {
@@ -44,9 +35,6 @@ interface CanvasProps {
     height: number;
     binSize: number;
     lines: any[];
-    lowDimensionalLines: number[][];
-    features: number[][];
-    clusters: number[];
     hues: number[];
     binDensity: number[][];
     binsInfo: BinningMap;

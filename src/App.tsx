@@ -1,32 +1,28 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-14 12:21:44
+ * @LastEditTime: 2023-02-14 14:33:54
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'antd/dist/antd.min.css';
 import {
-  Button, Tabs, InputNumber, Layout, Select, Divider,
-  Row, Col, List, Switch, Slider, Upload, Checkbox, CheckboxOptionType
+  Button, InputNumber, Layout, Select, Divider,
+  Row, Col, Slider, Upload, Checkbox, CheckboxOptionType, Tooltip
 } from "antd";
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import Canvas from './components/Canvas';
 import papa from 'papaparse';
-import axios from 'axios';
-import { Line, ImportamceLine } from './core/defs/line';
 import { UploadOutlined } from '@ant-design/icons';
 import * as d3 from 'd3';
 
 import './App.css';
-import { RcFile } from 'antd/lib/upload';
-import { BinningMap, binning, normalizeData } from './core/binning';
+import { BinningMap, binning } from './core/binning';
 import { samplingAggregate, clusterDivision, getNearestClusterNodeId, getHues } from './core/sampling-aggregate'
 import { Hierarchical } from './core/hierarchical-clustering'
 
-const { TabPane } = Tabs;
 const { Header, Footer, Sider, Content } = Layout;
 const { Option } = Select;
 
@@ -93,7 +89,7 @@ const getHueInTemplates = (C: number[], R: number[], init_H: number[]) => {
     let sector2_h = hueMapping(C[1], R[1], sector2);
     let new_H = new Array(init_H.length).fill(0);
     indexes.forEach((idx, i) => {
-      if (idx == 0) { new_H[i] = sector1_h.shift(); }
+      if (idx === 0) { new_H[i] = sector1_h.shift(); }
       else { new_H[i] = sector2_h.shift(); }
     })
     return new_H;
@@ -121,13 +117,8 @@ function argMax(arr: number[]) {
 
 function App() {
   const [lines, setLines] = useState<{ times?: number[], xValues: number[], yValues: number[] }[]>([]);
-  const [lowDimensionalLines, setLowDimensionalLines] = useState<number[][]>([]);
-  const [features, setFeatures] = useState<number[][]>([]);
-  const [clusters, setClusters] = useState<number[]>([]);
   const [hues, setHues] = useState<number[]>([]);
   const [binDensity, setBinDensity] = useState<number[][]>([]);
-  const [MMMethod, setMMMethod] = useState<string>('BMM');
-  const [componentsNum, setComponentsNum] = useState<number | undefined>(undefined);
   const [binSize, setBinSize] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(1000);
   const [canvasHeight, setCanvasHeight] = useState<number>(500);
@@ -141,19 +132,22 @@ function App() {
   const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
-  const [clickPoint, setClickPoint] = useState<number[]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
+  const [samplingRate, setSamplingRate] = useState<number>(0.2);
+  const [maxDensityValue, setMaxDensityValue] = useState<number>(0);
+  const [minDensity, setMinDensity] = useState<number>(1);
 
   useEffect(() => {
     const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
     setBinsInfo(bins);
+
     const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size))));
     const binDensity = bins.map(binCol => binCol.map(bin => bin.size / binDensityMax));
-
     setBinDensity(binDensity);
-    const [hc, lineSet] = samplingAggregate(bins, 0.1);
+    setMaxDensityValue(binDensityMax);
 
+    const [hc, lineSet] = samplingAggregate(bins, samplingRate, minDensity);
     if (hc.nodes.length === 0) {
       return;
     }
@@ -162,7 +156,7 @@ function App() {
     const hues = getHues(bins, hc);
     setHues(hues);
 
-  }, [binSize, canvasHeight, canvasWidth, lines]);
+  }, [binSize, canvasHeight, canvasWidth, lines, minDensity, samplingRate]);
 
 
   useEffect(() => {
@@ -172,13 +166,13 @@ function App() {
 
     let dotProduct = (a: number[], b: number[]) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
     setHues(clusterProbs.map(clusterProb => dotProduct(clusterProb, hueCenters)));
-    if (componentsNum !== undefined && binsInfo.length > 0) {
+    if (hueCenters.length !== undefined && binsInfo.length > 0) {
       //console.log(binsInfo);
-      const lineProbsofClusters = Array(lines.length).fill(0).map(() => Array(componentsNum).fill(0));
+      const lineProbsofClusters = Array(lines.length).fill(0).map(() => Array(hueCenters.length).fill(0));
       for (let i = 0; i < binsInfo.length; ++i) {
         const clusterLineSetForThisTime = [];
 
-        for (let k = 0; k < componentsNum; ++k) {
+        for (let k = 0; k < hueCenters.length; ++k) {
           clusterLineSetForThisTime.push(new Set());
         }
 
@@ -198,7 +192,7 @@ function App() {
       console.log(lineProbsofClusters);
       setLineProbsofEachCluster(lineProbsofClusters);
     }
-  }, [hueCenters, clusterProbs, binsInfo, componentsNum, lines.length]);
+  }, [hueCenters, clusterProbs, binsInfo, lines.length]);
 
   useEffect(() => {
     if (hueTemplateType !== 'N-Type') {
@@ -499,7 +493,7 @@ function App() {
       })
     })
 
-  }, [componentsNum, hueCenters]);
+  }, [hueCenters]);
 
   return (
     <div className="App">
@@ -508,6 +502,7 @@ function App() {
         <Layout>
           <Sider width={300} theme="light" className="site-layout-background">
             <Divider>Parameters</Divider>
+            <br />
             <Row>
               <Col span={6} className="item-text">Resolution:</Col>
               <Col span={18}>
@@ -529,9 +524,23 @@ function App() {
             </Row>
             <br />
             <Row>
-              <Col span={12} className="item-text">Hierarchical dividing:</Col>
+              <Col span={12} className="item-text">Sampling Rate:</Col>
               <Col span={12}>
-
+                <InputNumber style={{ width: 100 }} min={0} max={1} defaultValue={0.2} step={0.05}
+                  onChange={(value) => { setSamplingRate(value) }} />
+              </Col>
+            </Row>
+            <br />
+            <Row>
+              <Col span={24} className="item-text">Minimum Density:</Col>
+            </Row>
+            <Row>
+              <Col span={22} offset={1}>
+                <Slider reverse min={1} max={maxDensityValue} defaultValue={maxDensityValue}
+                  tooltip={{ formatter: (value) => { return maxDensityValue - (value as number) + 1 } }}
+                  onChange={(value) => {
+                    setMinDensity(maxDensityValue - (value as number) + 1)
+                  }}></Slider>
               </Col>
             </Row>
             <br />
@@ -542,7 +551,7 @@ function App() {
                 value={checkboxState}
                 onChange={(value) => {
                   setCheckboxState(value);
-                  let ifShow = new Array(componentsNum).fill(false)
+                  let ifShow = new Array(hueCenters.length).fill(false)
                   value.forEach((v) => { ifShow[v as number] = true; })
                   setIfShowedCluster(ifShow);
                 }} />
@@ -657,13 +666,11 @@ function App() {
           </Sider>
           <Content>
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
-              binDensity={binDensity} lines={lines} lowDimensionalLines={lowDimensionalLines}
-              features={features} clusters={clusters} hues={hues} binsInfo={binsInfo}
+              binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
               clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}
               setHues={(hues) => { setHues(hues) }}
               divideCluster={(x, y) => {
                 const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
-                console.log(nearestClusterId);
                 clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
                 const hues = getHues(binsInfo, hc as Hierarchical);
                 setHues(hues);
