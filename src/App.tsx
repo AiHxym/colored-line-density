@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-14 14:33:54
+ * @LastEditTime: 2023-02-14 18:25:29
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -136,7 +136,8 @@ function App() {
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
   const [samplingRate, setSamplingRate] = useState<number>(0.2);
   const [maxDensityValue, setMaxDensityValue] = useState<number>(0);
-  const [minDensity, setMinDensity] = useState<number>(1);
+  const [minDensity, setMinDensity] = useState<number>(100);
+  const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
 
   useEffect(() => {
     const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
@@ -507,10 +508,10 @@ function App() {
               <Col span={6} className="item-text">Resolution:</Col>
               <Col span={18}>
                 <InputNumber style={{ width: 80 }} min={0} max={2000} defaultValue={1000} step={1}
-                  onChange={(value) => { setCanvasWidth(value) }} />
+                  onChange={(value) => { setCanvasWidth(value as number) }} />
                 &nbsp; X &nbsp;
                 <InputNumber style={{ width: 80 }} min={0} max={2000} defaultValue={500} step={1}
-                  onChange={(value) => { setCanvasHeight(value) }} />
+                  onChange={(value) => { setCanvasHeight(value as number) }} />
 
               </Col>
             </Row>
@@ -519,7 +520,7 @@ function App() {
               <Col span={12} className="item-text">Grid Size:</Col>
               <Col span={12}>
                 <InputNumber style={{ width: 100 }} min={0} max={10000} defaultValue={1} step={1}
-                  onChange={(value) => { setBinSize(value) }} />
+                  onChange={(value) => { setBinSize(value as number) }} />
               </Col>
             </Row>
             <br />
@@ -527,7 +528,7 @@ function App() {
               <Col span={12} className="item-text">Sampling Rate:</Col>
               <Col span={12}>
                 <InputNumber style={{ width: 100 }} min={0} max={1} defaultValue={0.2} step={0.05}
-                  onChange={(value) => { setSamplingRate(value) }} />
+                  onChange={(value) => { setSamplingRate(value as number) }} />
               </Col>
             </Row>
             <br />
@@ -539,6 +540,9 @@ function App() {
                 <Slider reverse min={1} max={maxDensityValue} defaultValue={maxDensityValue}
                   tooltip={{ formatter: (value) => { return maxDensityValue - (value as number) + 1 } }}
                   onChange={(value) => {
+                    setMinDisplayDensity(((maxDensityValue - (value as number) + 1)) / maxDensityValue - 0.0001)
+                  }}
+                  onAfterChange={(value) => {
                     setMinDensity(maxDensityValue - (value as number) + 1)
                   }}></Slider>
               </Col>
@@ -613,7 +617,7 @@ function App() {
                       }
 
 
-                      if (rawLine[0].x) {
+                      if (rawLine[0].time) {
                         const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
                         for (let i = 0; i < rawLine.length; ++i) {
                           line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
@@ -650,7 +654,7 @@ function App() {
                     }
 
 
-                    //console.log(lines);
+                    console.log(lines);
                     setLines(lines);
                   }
 
@@ -668,6 +672,7 @@ function App() {
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
               binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
               clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}
+              minDisplayDensity={minDisplayDensity}
               setHues={(hues) => { setHues(hues) }}
               divideCluster={(x, y) => {
                 const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);

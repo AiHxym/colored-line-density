@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-14 13:45:03
+ * @LastEditTime: 2023-02-14 15:37:56
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -40,6 +40,7 @@ interface CanvasProps {
     binsInfo: BinningMap;
     clusterProbs: number[][];
     lineProbsofEachCluster: number[][];
+    minDisplayDensity: number;
     divideCluster: (x: number, y: number) => void;
     setHues: (hues: number[]) => void;
 }
@@ -56,184 +57,19 @@ export default function Canvas(props: CanvasProps) {
 
     const pickedGrid = new Set<string>();
 
-
-    // useEffect(() => {
-    //     const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-    //     const ctx = canvas.getContext("2d");
-    //     if (!ctx) {
-    //         throw new Error("Failed to get canvas context");
-    //     }
-    //     if (strokePickedGrid.size > 0) {
-    //         let pickedLines = new Set<number>();
-    //         for (let girdCoordinates of strokePickedGrid) {
-    //             const [x, y] = girdCoordinates.split(',').map(Number);
-    //             pickedLines = new Set([...pickedLines, ...props.binsInfo[x][y]]);
-    //         }
-
-    //         const width = canvas.width;
-    //         const height = canvas.height;
-    //         const binWidth = width / props.binsInfo.length;
-    //         const binHeight = height / props.binsInfo[0].length;
-
-    //         for (let i = 0; i < props.binsInfo.length; i++) {
-    //             for (let j = 0; j < props.binsInfo[0].length; j++) {
-    //                 const bin = props.binsInfo[i][j];
-    //                 if ((new Set([...pickedLines].filter((val: number) => bin.has(val)))).size > 0) {
-    //                     const binX = i * binWidth;
-    //                     const binY = (props.binsInfo[i].length - j) * binHeight;
-
-    //                     ctx.fillStyle = d3.interpolateOranges((bin.size / 20) * 0.7 + 0.3);
-    //                     ctx.fillRect(binX, binY, binWidth, binHeight);
-    //                 }
-
-    //             }
-    //         }
-    //     }
-    // }, [strokePickedGrid, props.binsInfo]);
-
     useEffect(() => {
         if (clickPoint) {
-            /*
-            const selectedClusterId = argMax(props.clusterProbs[clickPoint[0] * 500 + 499 - clickPoint[1]]);
-            console.log(selectedClusterId);
-            //console.log(selectedClusterId);
-            const selectedLines = props.lines.filter((line, index) => props.lineProbsofEachCluster[index][selectedClusterId] > 0.1);
-            const bins = binning(selectedLines, { start: 0, stop: 1000, step: 1 }, { start: 0, stop: 500, step: 1 }, false, false);
-            const canvas = document.getElementById('extra') as HTMLCanvasElement;
-            renderSketch(bins, canvas, (d) => d3.interpolateMagma(d), [], [], [], []);
-            const svg = d3.select('#extra-renderer');
-            svg.selectAll('path').remove();
-            svg.selectAll('path')
-                .data(selectedLines)
-                .enter()
-                .append('path')
-                .attr('d', (d) => {
-                    return d3.line()(d.map((point) => [point.x, 499 - point.y]));
-                })
-                .attr('stroke', 'orange')
-                .attr('stroke-width', 1)
-                .attr('fill', 'none');
-            console.log(selectedLines);
-            */
             props.divideCluster(clickPoint[0], clickPoint[1]);
 
         }
     }, [clickPoint]);
 
-    /*
-    useEffect(() => {
-        const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-        if (strokePickedGrid.size > 0) {
-            const lineIdVectors = [];
-            for (let girdCoordinates of strokePickedGrid) {
-                const lineIdVector = new Array(props.lines.length).fill(0);
-                const [x, y] = girdCoordinates.split(',').map(Number);
-                for (let lineId of binsInfo[x][y]) {
-                    lineIdVector[lineId] = 1;
-                }
-                lineIdVectors.push(lineIdVector);
-            }
-            console.log(lineIdVectors);
-            const eigenVectors = PCA.getEigenVectors(lineIdVectors);
-            const dimReducedData = PCA.computeAdjustedData(lineIdVectors, eigenVectors[0], eigenVectors[1], eigenVectors[2]).adjustedData;
-            for (let dimension of dimReducedData) {
-                const maxNumber = Math.max(...dimension);
-                const minNumber = Math.min(...dimension);
-                for (let i = 0; i < dimension.length; i++) {
-                    dimension[i] = (dimension[i] - minNumber) / (maxNumber - minNumber);
-                }
-            }
-            console.log(dimReducedData);
-            renderExtra(binsInfo, canvas, strokePickedGrid, dimReducedData);
-        }
-    }, [binsInfo, props.lines.length, strokePickedGrid]);
-    */
-
-    /*
-    useEffect(() => {
-        if (clickPoint) {
-            const selectedClusterId = clusterLabls[clickPoint[0]][799 - clickPoint[1]];
-            let maxClusterId = clusterLabls[0][0];
-            for (let i = 1; i < clusterLabls.length; ++i) {
-                for (let j = 1; j < clusterLabls[i].length; ++j) {
-                    if (clusterLabls[i][j] > maxClusterId) {
-                        maxClusterId = clusterLabls[i][j];
-                    }
-                }
-            }
-            const selectedCluster: { x: number; y: number; feature: number[] }[] = [];
-            for (let i = 0; i < clusterLabls.length; ++i) {
-                for (let j = 0; j < clusterLabls[i].length; ++j) {
-                    if (clusterLabls[i][j] === selectedClusterId && binsInfo[i][j].size / maxDenstyValue > 0.15) {
-                        selectedCluster.push({ x: i, y: j, feature: props.features[i * clusterLabls[i].length + j] });
-                    }
-                }
-            }
-            console.log(selectedCluster);
-    
-            const silhouetteScores = [];
-            for (let i = 2; i < 5; ++i) {
-                const KR = kmeans(selectedCluster.map(v => v.feature), i);
-                silhouetteScores.push(quickSilhouetteScore(KR, selectedCluster));
-            }
-            const properK = silhouetteScores.indexOf(Math.max(...silhouetteScores)) + 2;
-            const clusteringResult = kmeans(selectedCluster.map(v => v.feature), properK, "kmeans++");
-    
-            const clickPointFeature = props.features[clickPoint[0] * clusterLabls[0].length + 799 - clickPoint[1]];
-            let minDistanceToClickPoint = Infinity;
-            let minDistanceToClickPointClusterId = -1;
-            for (let i = 0; i < clusteringResult.centroids.length; ++i) {
-                const distance = Distance.euclideanDist(clickPointFeature, clusteringResult.centroids[i]);
-                if (distance < minDistanceToClickPoint) {
-                    minDistanceToClickPoint = distance;
-                    minDistanceToClickPointClusterId = i;
-                }
-            }
-    
-            console.log(clusteringResult);
-            const newClusterLabls: number[][] = structuredClone(clusterLabls);
-            for (let i = 0; i < clusterLabls.length; ++i) {
-                for (let j = 0; j < clusterLabls[i].length; ++j) {
-                    if (clusterLabls[i][j] === selectedClusterId) {
-                        let minDistanceToPoint = Infinity;
-                        let minDistanceToPointClusterId = -1;
-                        for (let k = 0; k < clusteringResult.centroids.length; ++k) {
-                            const distance = Distance.euclideanDist(props.features[i * clusterLabls[i].length + j], clusteringResult.centroids[k]);
-                            if (distance < minDistanceToPoint) {
-                                minDistanceToPoint = distance;
-                                minDistanceToPointClusterId = k;
-                            }
-                        }
-    
-                        if (minDistanceToPointClusterId === minDistanceToClickPointClusterId) {
-                            newClusterLabls[i][j] = maxClusterId + 1;
-                        } else {
-                            newClusterLabls[i][j] = selectedClusterId;
-                        }
-                    }
-                }
-            }
-            setClusterLabels(newClusterLabls)
-        }
-    }, [clickPoint, props.features, binsInfo, maxDenstyValue]);
-    */
-
-    /*
-    useEffect(() => {
-        if (clusterLabls.length > 0 && binsInfo.length > 0) {
-            console.log(clusterLabls);
-            const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            render(binsInfo, canvas, d3.interpolateMagma, [], [], clusterLabls.flat(), props.hues);
-        }
-    }, [binsInfo, clusterLabls, props.hues]);
-    */
-
     useEffect(() => {
         if (props.binDensity.length > 0) {
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            render(props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+            render(props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues, props.minDisplayDensity);
         }
-    }, [props.binDensity, props.hues]);
+    }, [props.binDensity, props.hues, props.binSize, props.minDisplayDensity]);
 
 
 
@@ -273,12 +109,6 @@ export default function Canvas(props: CanvasProps) {
                     setClickPoint([mouseX, mouseY]);
 
                 }}></canvas>
-            {/*<svg id="plots" style={{
-                position: 'relative',
-                top: '-806px',
-                width: '1600px',
-                height: '800px'
-            }}></svg>*/}
             <canvas id="extra" width={props.width} height={props.height}></canvas>
             <svg id="extra-renderer" style={{
                 width: props.width + 'px',

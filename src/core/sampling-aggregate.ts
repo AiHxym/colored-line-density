@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-02-14 10:55:31
+ * @LastEditTime: 2023-02-14 18:16:56
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -39,6 +39,7 @@ export function samplingAggregate(bins: Set<number>[][], samplingRate = 0.05, mi
     const sampledFlattenBins = getRandomSubarray(highDensityBins, Math.floor(highDensityBins.length * samplingRate));
     const sampledBins = sampledFlattenBins.map(v => v[1]);
     const hc = new Hierarchical(1);
+    console.log(sampledBins.length);
     hc.fit(sampledBins);
     return [hc, lineSet];
 }
