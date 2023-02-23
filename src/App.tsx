@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-14 18:25:29
+ * @LastEditTime: 2023-02-23 15:48:27
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -134,26 +134,27 @@ function App() {
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
-  const [samplingRate, setSamplingRate] = useState<number>(0.2);
+  const [samplingRate, setSamplingRate] = useState<number>(0.07);
   const [maxDensityValue, setMaxDensityValue] = useState<number>(0);
-  const [minDensity, setMinDensity] = useState<number>(100);
+  const [minDensity, setMinDensity] = useState<number>(30);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
 
   useEffect(() => {
+    console.log('lines changed');
     const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
     setBinsInfo(bins);
+    console.log('bins:', bins);
 
     const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size))));
     const binDensity = bins.map(binCol => binCol.map(bin => bin.size / binDensityMax));
     setBinDensity(binDensity);
     setMaxDensityValue(binDensityMax);
-
-    const [hc, lineSet] = samplingAggregate(bins, samplingRate, minDensity);
+    console.log('binDensity:', binDensity);
+    const hc = samplingAggregate(bins, samplingRate, minDensity);
     if (hc.nodes.length === 0) {
       return;
     }
     setHC(hc);
-    setLineSet(lineSet);
     const hues = getHues(bins, hc);
     setHues(hues);
 
@@ -656,6 +657,7 @@ function App() {
 
                     console.log(lines);
                     setLines(lines);
+                    setLineSet(new Set(lines.map((line, i) => i)));
                   }
 
                 });

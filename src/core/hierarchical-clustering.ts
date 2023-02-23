@@ -93,7 +93,8 @@ export class Hierarchical {
             const [part1, part2] = closestPart;
             const [node1, node2] = [nodes[part1], nodes[part2]];
             const new_node = new ClusterNode(
-                union(node1.aggregateSet, node2.aggregateSet),
+                //union(node1.aggregateSet, node2.aggregateSet),
+                new Set(),
                 node1,
                 node2,
                 minDist,

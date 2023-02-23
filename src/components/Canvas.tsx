@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-14 15:37:56
+ * @LastEditTime: 2023-02-23 15:25:16
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -77,10 +77,10 @@ export default function Canvas(props: CanvasProps) {
         <div className="canvas-container">
             <canvas id="diagram" width={props.width} height={props.height}
                 onMouseDown={(event) => {
-                    setIsMouseDown(true);
+                    //setIsMouseDown(true);
                 }}
                 onMouseMove={(event) => {
-
+                    /*
                     if (isMouseDown) {
                         const mouseX = event.nativeEvent.offsetX;
                         const mouseY = event.nativeEvent.offsetY;
@@ -93,20 +93,20 @@ export default function Canvas(props: CanvasProps) {
                                 }
                             }
                         }
-                    }
+                    }*/
                 }}
                 onMouseUp={(event) => {
-                    setIsMouseDown(false);
+                    //setIsMouseDown(false);
 
-                    setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
-                    pickedGrid.clear();
-                    console.log(strokePickedGrid);
+                    //setStrokePickedGrid(new Set([...strokePickedGrid, ...pickedGrid]));
+                    //pickedGrid.clear();
+                    //console.log(strokePickedGrid);
 
                 }}
                 onClick={(event) => {
                     const mouseX = event.nativeEvent.offsetX;
                     const mouseY = event.nativeEvent.offsetY;
-                    setClickPoint([mouseX, mouseY]);
+                    setClickPoint([mouseX, props.height - mouseY]);
 
                 }}></canvas>
             <canvas id="extra" width={props.width} height={props.height}></canvas>

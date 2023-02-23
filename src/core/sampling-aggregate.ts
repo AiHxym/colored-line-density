@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-02-14 18:16:56
+ * @LastEditTime: 2023-02-23 15:14:54
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -24,24 +24,27 @@ function getRandomSubarray(arr: any[], size: number) {
     return shuffled.slice(min);
 }
 
-export function samplingAggregate(bins: Set<number>[][], samplingRate = 0.05, minDensity = 8): [Hierarchical, Set<number>] {
-    let lineSet = new Set<number>();
+export function samplingAggregate(bins: Set<number>[][], samplingRate = 0.05, minDensity = 8): Hierarchical {
+    console.log("samplingAggregate");
     const flattenBins: [[number, number], Set<number>][] = [];
     for (let i = 0; i < bins.length; i++) {
         for (let j = 0; j < bins[i].length; j++) {
             flattenBins.push([[i, j], bins[i][j]]);
-            lineSet = union(lineSet, bins[i][j]);
         }
     }
+    console.log("finsied flattenBins");
 
     flattenBins.sort((a, b) => b[1].size - a[1].size);
+    console.log(flattenBins.length);
     const highDensityBins = flattenBins.filter(v => v[1].size >= minDensity);
+    console.log(highDensityBins.length);
     const sampledFlattenBins = getRandomSubarray(highDensityBins, Math.floor(highDensityBins.length * samplingRate));
     const sampledBins = sampledFlattenBins.map(v => v[1]);
-    const hc = new Hierarchical(1);
     console.log(sampledBins.length);
+    const hc = new Hierarchical(1);
+
     hc.fit(sampledBins);
-    return [hc, lineSet];
+    return hc;
 }
 
 export function clusterDivision(hc: Hierarchical, divideNodeId: number, lineSet: Set<number>) {
