@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-27 22:53:03
+ * @LastEditTime: 2023-02-27 22:57:43
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -575,7 +575,7 @@ function App() {
             </Row>
             <br />
             <Row>
-              <Col span={18} className="item-text">Sampling bin number: {sampledBinNum}</Col>
+              <Col span={18} className="item-text">Sampling bin number: {sampledBinNum > 4000 ? <span style={{ color: "red" }}>{sampledBinNum}</span> : sampledBinNum}</Col>
               <Col span={6}> <Button type="primary" onClick={() => {
                 setMinDensity(minDisplayDensity);
                 setSamplingRate(displaySamplingRate);
