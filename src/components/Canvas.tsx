@@ -1,14 +1,14 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-23 15:25:16
+ * @LastEditTime: 2023-02-27 15:32:03
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BinningMap } from '../core/binning';
-import { render } from '../core/renderer';
+import { render, renderMinus, renderPlus } from '../core/renderer';
 import * as d3 from 'd3';
 
 function argMax(arr: number[]) {
@@ -36,7 +36,7 @@ interface CanvasProps {
     binSize: number;
     lines: any[];
     hues: number[];
-    binDensity: number[][];
+    binDensity: { [key: number]: [[number, number], number][]; };
     binsInfo: BinningMap;
     clusterProbs: number[][];
     lineProbsofEachCluster: number[][];
@@ -55,7 +55,9 @@ export default function Canvas(props: CanvasProps) {
     const [clickPoint, setClickPoint] = useState<[number, number] | null>(null);
     const [maxDenstyValue, setMaxDensityValue] = useState<number>(0);
 
-    const pickedGrid = new Set<string>();
+    //const pickedGrid = new Set<string>();
+
+    const prevMinDisplayDensityRef = useRef<number>();
 
     useEffect(() => {
         if (clickPoint) {
@@ -65,11 +67,28 @@ export default function Canvas(props: CanvasProps) {
     }, [clickPoint]);
 
     useEffect(() => {
-        if (props.binDensity.length > 0) {
+        if (props.binsInfo.length > 0) {
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            render(props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues, props.minDisplayDensity);
+            render(props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
         }
-    }, [props.binDensity, props.hues, props.binSize, props.minDisplayDensity]);
+    }, [props.binDensity, props.hues, props.binSize, props.minDisplayDensity, props.binsInfo]);
+
+    useEffect(() => {
+        if (props.binsInfo.length > 0) {
+            const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+            if (prevMinDisplayDensityRef.current) {
+                if (props.minDisplayDensity - prevMinDisplayDensityRef.current > 0) {
+                    renderMinus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                } else if (props.minDisplayDensity - prevMinDisplayDensityRef.current < 0) {
+                    renderPlus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                }
+
+            } else {
+                renderMinus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+            }
+        }
+        prevMinDisplayDensityRef.current = props.minDisplayDensity;
+    }, [props.minDisplayDensity]);
 
 
 

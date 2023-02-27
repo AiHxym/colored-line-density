@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-23 15:48:27
+ * @LastEditTime: 2023-02-27 15:03:58
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -118,7 +118,7 @@ function argMax(arr: number[]) {
 function App() {
   const [lines, setLines] = useState<{ times?: number[], xValues: number[], yValues: number[] }[]>([]);
   const [hues, setHues] = useState<number[]>([]);
-  const [binDensity, setBinDensity] = useState<number[][]>([]);
+  const [binDensity, setBinDensity] = useState<{ [key: number]: [[number, number], number][] }>([]);
   const [binSize, setBinSize] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(1000);
   const [canvasHeight, setCanvasHeight] = useState<number>(500);
@@ -134,9 +134,9 @@ function App() {
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
-  const [samplingRate, setSamplingRate] = useState<number>(0.07);
+  const [samplingRate, setSamplingRate] = useState<number>(0.02);
   const [maxDensityValue, setMaxDensityValue] = useState<number>(0);
-  const [minDensity, setMinDensity] = useState<number>(30);
+  const [minDensity, setMinDensity] = useState<number>(1);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
 
   useEffect(() => {
@@ -146,11 +146,26 @@ function App() {
     console.log('bins:', bins);
 
     const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size))));
+
+    const newBinDensity: { [key: number]: [[number, number], number][] } = {};
+    const flattenBins: [[number, number], Set<number>][] = [];
+    for (let i = 0; i < bins.length; i++) {
+      for (let j = 0; j < bins[i].length; j++) {
+        flattenBins.push([[i, j], bins[i][j]]);
+        if (!newBinDensity[bins[i][j].size]) {
+          newBinDensity[bins[i][j].size] = [];
+        }
+        newBinDensity[bins[i][j].size].push([[i, j], bins[i][j].size / binDensityMax]);
+      }
+    }
+
+
+
     const binDensity = bins.map(binCol => binCol.map(bin => bin.size / binDensityMax));
-    setBinDensity(binDensity);
+    setBinDensity(newBinDensity);
     setMaxDensityValue(binDensityMax);
     console.log('binDensity:', binDensity);
-    const hc = samplingAggregate(bins, samplingRate, minDensity);
+    const hc = samplingAggregate(flattenBins, samplingRate, minDensity);
     if (hc.nodes.length === 0) {
       return;
     }
@@ -244,7 +259,7 @@ function App() {
 
     let hueCount = new Array(360).fill(0);
     hues.forEach((h, i) => {
-      if (binDensity[Math.floor(i / binDensity[0].length)][i % binDensity[0].length] > 0) {
+      if (binsInfo[Math.floor(i / binsInfo[0].length)][i % binsInfo[0].length].size > 0) {
         ++hueCount[Math.floor(h)];
       }
     });
