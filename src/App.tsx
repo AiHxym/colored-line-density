@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-27 22:24:59
+ * @LastEditTime: 2023-02-27 22:53:03
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -134,10 +134,23 @@ function App() {
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
-  const [samplingRate, setSamplingRate] = useState<number>(0.01);
+  const [samplingRate, setSamplingRate] = useState<number>(0.001);
+  const [displaySamplingRate, setDisplaySamplingRate] = useState<number>(0.2);
   const [maxDensityValue, setMaxDensityValue] = useState<number>(0);
   const [minDensity, setMinDensity] = useState<number>(0);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
+  const [sampledBinNum, setSampledBinNum] = useState<number>(0);
+
+  useEffect(() => {
+    let totalBins = 0;
+    for (const [denstiy, flattenBins] of Object.entries(binDensity)) {
+      if (parseInt(denstiy) >= minDisplayDensity) {
+        totalBins += flattenBins.length;
+      }
+    }
+    console.log('totalBins:', totalBins);
+    setSampledBinNum(Math.floor(totalBins * displaySamplingRate));
+  }, [binDensity, displaySamplingRate, minDisplayDensity]);
 
   useEffect(() => {
     console.log('lines changed');
@@ -540,8 +553,8 @@ function App() {
             <Row>
               <Col span={12} className="item-text">Sampling Rate:</Col>
               <Col span={12}>
-                <InputNumber style={{ width: 100 }} min={0} max={1} defaultValue={0.2} step={0.05}
-                  onChange={(value) => { setSamplingRate(value as number) }} />
+                <InputNumber style={{ width: 100 }} min={0} max={1} value={displaySamplingRate} step={0.05}
+                  onChange={(value) => { setDisplaySamplingRate(value as number) }} />
               </Col>
             </Row>
             <br />
@@ -556,8 +569,18 @@ function App() {
                     setMinDisplayDensity((maxDensityValue - (value as number)))
                   }}
                   onAfterChange={(value) => {
-                    setMinDensity(maxDensityValue - (value as number))
+                    setMinDisplayDensity(maxDensityValue - (value as number))
                   }}></Slider>
+              </Col>
+            </Row>
+            <br />
+            <Row>
+              <Col span={18} className="item-text">Sampling bin number: {sampledBinNum}</Col>
+              <Col span={6}> <Button type="primary" onClick={() => {
+                setMinDensity(minDisplayDensity);
+                setSamplingRate(displaySamplingRate);
+              }}>Show
+              </Button>
               </Col>
             </Row>
             <br />
