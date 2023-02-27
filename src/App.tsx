@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-27 15:03:58
+ * @LastEditTime: 2023-02-27 22:24:59
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -134,9 +134,9 @@ function App() {
   const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
-  const [samplingRate, setSamplingRate] = useState<number>(0.02);
+  const [samplingRate, setSamplingRate] = useState<number>(0.01);
   const [maxDensityValue, setMaxDensityValue] = useState<number>(0);
-  const [minDensity, setMinDensity] = useState<number>(1);
+  const [minDensity, setMinDensity] = useState<number>(0);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
 
   useEffect(() => {
@@ -158,13 +158,10 @@ function App() {
         newBinDensity[bins[i][j].size].push([[i, j], bins[i][j].size / binDensityMax]);
       }
     }
+    newBinDensity[0] = [];
 
-
-
-    const binDensity = bins.map(binCol => binCol.map(bin => bin.size / binDensityMax));
     setBinDensity(newBinDensity);
     setMaxDensityValue(binDensityMax);
-    console.log('binDensity:', binDensity);
     const hc = samplingAggregate(flattenBins, samplingRate, minDensity);
     if (hc.nodes.length === 0) {
       return;
@@ -553,13 +550,13 @@ function App() {
             </Row>
             <Row>
               <Col span={22} offset={1}>
-                <Slider reverse min={1} max={maxDensityValue} defaultValue={maxDensityValue}
-                  tooltip={{ formatter: (value) => { return maxDensityValue - (value as number) + 1 } }}
+                <Slider reverse min={0} max={maxDensityValue} value={maxDensityValue - minDisplayDensity}
+                  tooltip={{ formatter: (value) => { return maxDensityValue - (value as number) } }}
                   onChange={(value) => {
-                    setMinDisplayDensity(((maxDensityValue - (value as number) + 1)) / maxDensityValue - 0.0001)
+                    setMinDisplayDensity((maxDensityValue - (value as number)))
                   }}
                   onAfterChange={(value) => {
-                    setMinDensity(maxDensityValue - (value as number) + 1)
+                    setMinDensity(maxDensityValue - (value as number))
                   }}></Slider>
               </Col>
             </Row>
@@ -633,13 +630,14 @@ function App() {
                       }
 
 
-                      if (rawLine[0].time) {
+                      if (rawLine[0].time !== undefined) {
                         const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
                         for (let i = 0; i < rawLine.length; ++i) {
                           line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
                           line.xValues.push(parseFloat(rawLine[i].x));
                           line.yValues.push(parseFloat(rawLine[i].y));
                         }
+                        if (line.xValues.length <= 1) continue;
                         xMin = Math.min(xMin, ...line.xValues);
                         xMax = Math.max(xMax, ...line.xValues);
                         yMin = Math.min(yMin, ...line.yValues);
@@ -651,6 +649,7 @@ function App() {
                           line.xValues.push(parseFloat(rawLine[i].x));
                           line.yValues.push(parseFloat(rawLine[i].y));
                         }
+                        if (line.xValues.length <= 1) continue;
                         xMin = Math.min(xMin, ...line.xValues);
                         xMax = Math.max(xMax, ...line.xValues);
                         yMin = Math.min(yMin, ...line.yValues);
@@ -658,6 +657,7 @@ function App() {
                         lines.push(line);
                       }
                     }
+                    console.log(lines);
 
                     if (lines[lines.length - 1].xValues.length <= 1) {
                       lines.pop();

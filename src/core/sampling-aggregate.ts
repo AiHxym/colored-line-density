@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-02-27 13:03:20
+ * @LastEditTime: 2023-02-27 22:15:32
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -27,7 +27,7 @@ function getRandomSubarray(arr: any[], size: number) {
 export function samplingAggregate(flattenBins: [[number, number], Set<number>][], samplingRate = 0.05, minDensity = 8): Hierarchical {
     flattenBins.sort((a, b) => b[1].size - a[1].size);
     console.log(flattenBins.length);
-    const highDensityBins = flattenBins.filter(v => v[1].size >= minDensity);
+    const highDensityBins = flattenBins.filter(v => v[1].size >= (minDensity > 0 ? minDensity : 1));
     console.log(highDensityBins.length);
     const sampledFlattenBins = getRandomSubarray(highDensityBins, Math.floor(highDensityBins.length * samplingRate));
     const sampledBins = sampledFlattenBins.map(v => v[1]);

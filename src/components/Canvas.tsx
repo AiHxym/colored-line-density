@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-27 15:32:03
+ * @LastEditTime: 2023-02-27 22:03:48
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -62,7 +62,6 @@ export default function Canvas(props: CanvasProps) {
     useEffect(() => {
         if (clickPoint) {
             props.divideCluster(clickPoint[0], clickPoint[1]);
-
         }
     }, [clickPoint]);
 
@@ -71,24 +70,28 @@ export default function Canvas(props: CanvasProps) {
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
             render(props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
         }
-    }, [props.binDensity, props.hues, props.binSize, props.minDisplayDensity, props.binsInfo]);
+    }, [props.binDensity, props.hues, props.binSize, props.binsInfo]);
 
     useEffect(() => {
         if (props.binsInfo.length > 0) {
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            if (prevMinDisplayDensityRef.current) {
+            console.log(props.minDisplayDensity);
+            console.log(prevMinDisplayDensityRef.current);
+            if (prevMinDisplayDensityRef.current !== undefined) {
                 if (props.minDisplayDensity - prevMinDisplayDensityRef.current > 0) {
-                    renderMinus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                    setTimeout(() => {
+                        renderMinus(prevMinDisplayDensityRef.current as number, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                    }, 0);
                 } else if (props.minDisplayDensity - prevMinDisplayDensityRef.current < 0) {
-                    renderPlus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                    setTimeout(() => {
+                        renderPlus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                    }, 0);
                 }
 
-            } else {
-                renderMinus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
             }
         }
         prevMinDisplayDensityRef.current = props.minDisplayDensity;
-    }, [props.minDisplayDensity]);
+    }, [props.binDensity, props.binSize, props.binsInfo, props.hues, props.minDisplayDensity]);
 
 
 
