@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 11:04:00
- * @LastEditTime: 2023-02-13 21:34:10
+ * @LastEditTime: 2023-02-28 19:43:42
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/circular-MDS.ts
@@ -53,9 +53,11 @@ export default function circularMDS(data: number[][], learningRate: number = 0.0
     const maxDissimilarity = Math.max(...dissimilarity.map(d => Math.max(...d)));
     for (let i = 0; i < dissimilarity.length; i++) {
         for (let j = 0; j < dissimilarity.length; j++) {
-            dissimilarity[i][j] = dissimilarity[i][j] / maxDissimilarity * 4;
+            dissimilarity[i][j] = dissimilarity[i][j] / maxDissimilarity * 2;
         }
     }
+
+    console.log(dissimilarity);
 
     for (let i = 0; i < iteration; i++) {
         const distance = [];
