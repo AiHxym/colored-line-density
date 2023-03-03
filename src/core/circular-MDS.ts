@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 11:04:00
- * @LastEditTime: 2023-02-28 20:39:50
+ * @LastEditTime: 2023-03-03 19:40:20
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/circular-MDS.ts
@@ -24,8 +24,8 @@ function calculateGradient(hues: number[], distance: number[][], dissimilarity: 
     for (let t = 0; t < hues.length; t++) {
         let gradient = 0;
         for (let i = 0; i < hues.length; i++) {
-            if (i !== t && distance[i][t] !== 0) {
-                gradient += ((distance[i][t] - dissimilarity[i][t]) / distance[i][t] * s_star - 1 / t_star) * Math.sin((hues[t] - hues[i]) * Math.PI / 180);
+            if (distance[i][t] !== 0) {
+                gradient += ((distance[i][t] - dissimilarity[i][t]) / (distance[i][t] * s_star) - 1 / t_star) * Math.sin((hues[t] - hues[i]) * Math.PI / 180);
             }
         }
 
@@ -36,7 +36,7 @@ function calculateGradient(hues: number[], distance: number[][], dissimilarity: 
     return gradients;
 }
 
-export default function circularMDS(data: number[][], learningRate: number = 0.1, iteration: number = 1000) {
+export default function circularMDS(data: number[][], learningRate: number = 0.1, iteration: number = 10000) {
     const hues = [];
     for (let i = 0; i < data.length; i++) {
         hues.push(Math.random() * 360);
@@ -53,7 +53,7 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
     const maxDissimilarity = Math.max(...dissimilarity.map(d => Math.max(...d)));
     for (let i = 0; i < dissimilarity.length; i++) {
         for (let j = 0; j < dissimilarity.length; j++) {
-            dissimilarity[i][j] = dissimilarity[i][j] / maxDissimilarity * 4;
+            dissimilarity[i][j] = dissimilarity[i][j] / maxDissimilarity * 2;
         }
     }
 
@@ -68,6 +68,7 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
             }
             distance.push(distanceRow);
         }
+        console.log(distance);
 
         const gradients = calculateGradient(hues, distance, dissimilarity);
         for (let j = 0; j < hues.length; j++) {
