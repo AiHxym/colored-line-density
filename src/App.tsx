@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-02-27 22:57:43
+ * @LastEditTime: 2023-03-04 19:33:17
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -717,8 +717,8 @@ function App() {
               divideCluster={(x, y) => {
                 const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
                 clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
-                const hues = getHues(binsInfo, hc as Hierarchical);
-                setHues(hues);
+                const newHues = getHues(binsInfo, hc as Hierarchical, hues);
+                setHues(newHues);
               }}></Canvas>
           </Content>
         </Layout>
