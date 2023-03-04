@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 11:04:00
- * @LastEditTime: 2023-03-04 17:43:33
+ * @LastEditTime: 2023-03-03 19:40:20
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/circular-MDS.ts
@@ -74,7 +74,8 @@ function calculateGradientAccurate(hues: number[], distance: number[][], dissimi
     return gradients;
 }
 
-export default function circularMDS(data: number[][], learningRate: number = 0.1, iteration: number = 1000) {
+
+export default function circularMDS(data: number[][], learningRate: number = 0.1, iteration: number = 10000) {
     const hues = [];
     for (let i = 0; i < data.length; i++) {
         hues.push(Math.random() * 360);
@@ -112,8 +113,9 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
             distance.push(distanceRow);
         }
         const gradients = calculateGradientAccurate(hues, distance, dissimilarity);
-        console.log(distance);
+
         for (let j = 0; j < hues.length; j++) {
+            console.log(gradients[j]);
             hues[j] -= learningRate * gradients[j];
         }
     }
