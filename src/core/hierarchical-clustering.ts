@@ -22,7 +22,8 @@ class ClusterNode {
     binIdList: number[];
     flattenBins: [[number, number], Set<number>][] | null;
     centroid: number[] | null;
-    constructor(aggregateSet: Set<number>, left: ClusterNode | null = null, right: ClusterNode | null = null, distance: number = -1, id: number | null = null, count: number = 1, binIdList: number[] = []) {
+    hue: number | null;
+    constructor(aggregateSet: Set<number>, left: ClusterNode | null = null, right: ClusterNode | null = null, distance: number = -1, id: number | null = null, count: number = 1, binIdList: number[] = [], hue: number | null = null) {
         this.aggregateSet = aggregateSet;
         this.left = left;
         this.right = right;
@@ -32,6 +33,7 @@ class ClusterNode {
         this.binIdList = binIdList;
         this.flattenBins = null;
         this.centroid = null;
+        this.hue = hue;
     }
 }
 

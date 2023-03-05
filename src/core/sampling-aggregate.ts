@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-04 19:32:24
+ * @LastEditTime: 2023-03-04 22:54:55
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -144,6 +144,7 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
             }
         }
         hc.nodes[0].flattenBins = flattenBins;
+        hc.nodes[0].hue = 0;
         return hues;
     }
 
@@ -164,9 +165,10 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
     }
 
 
-    const hueOfModelCentroids = circularMDS(modelCentroids, 0.1, 10000, fixItem);
+    const hueOfModelCentroids = circularMDS(modelCentroids, 0.1, 10000, fixItem, predefinedHues);
 
     for (let i = 0; i < hc.nodes.length; i++) {
+        hc.nodes[i].hue = hueOfModelCentroids[i];
         const node = hc.nodes[i];
         for (const flattenBin of node.flattenBins as [[number, number], Set<number>][]) {
             hues[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = hueOfModelCentroids[i];

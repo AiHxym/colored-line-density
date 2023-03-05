@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-04 19:33:17
+ * @LastEditTime: 2023-03-04 22:58:00
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -713,11 +713,20 @@ function App() {
               binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
               clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}
               minDisplayDensity={minDisplayDensity}
-              setHues={(hues) => { setHues(hues) }}
               divideCluster={(x, y) => {
                 const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
+                const preservedHues = [];
+
+                if (hc?.nodes !== undefined) {
+                  for (let i = 0; i < hc.nodes.length; ++i) {
+                    if (nearestClusterId !== hc.nodes[i].id) {
+                      preservedHues.push(hc.nodes[i].hue as number);
+                    }
+                  }
+                }
+
                 clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
-                const newHues = getHues(binsInfo, hc as Hierarchical, hues);
+                const newHues = getHues(binsInfo, hc as Hierarchical, preservedHues);
                 setHues(newHues);
               }}></Canvas>
           </Content>

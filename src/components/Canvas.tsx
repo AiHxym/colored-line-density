@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-02-27 22:03:48
+ * @LastEditTime: 2023-03-04 22:42:33
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -42,7 +42,6 @@ interface CanvasProps {
     lineProbsofEachCluster: number[][];
     minDisplayDensity: number;
     divideCluster: (x: number, y: number) => void;
-    setHues: (hues: number[]) => void;
 }
 
 export default function Canvas(props: CanvasProps) {

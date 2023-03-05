@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 11:04:00
- * @LastEditTime: 2023-03-04 19:18:52
+ * @LastEditTime: 2023-03-04 22:49:51
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/circular-MDS.ts
@@ -81,6 +81,10 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
             hues.push(Math.random() * 360);
         }
     }
+
+    console.log(hues);
+    console.log(fixItem);
+
     const dissimilarity = [];
     for (let i = 0; i < data.length; i++) {
         const dissimilarityRow = [];
@@ -96,8 +100,6 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
             dissimilarity[i][j] = dissimilarity[i][j] / maxDissimilarity * Math.PI;
         }
     }
-
-    console.log(dissimilarity);
 
     for (let i = 0; i < iteration; i++) {
         const distance = [];
@@ -116,7 +118,6 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
         const gradients = calculateGradientAccurate(hues, distance, dissimilarity);
 
         for (let j = 0; j < hues.length; j++) {
-            console.log(gradients[j]);
             if (fixItem.indexOf(j) === -1) {
                 hues[j] -= learningRate * gradients[j];
             }
