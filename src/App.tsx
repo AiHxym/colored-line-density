@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-04 22:58:00
+ * @LastEditTime: 2023-03-07 13:13:22
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -15,7 +15,7 @@ import {
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import Canvas from './components/Canvas';
 import papa from 'papaparse';
-import { UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import * as d3 from 'd3';
 
 import './App.css';
@@ -140,6 +140,11 @@ function App() {
   const [minDensity, setMinDensity] = useState<number>(0);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
   const [sampledBinNum, setSampledBinNum] = useState<number>(0);
+
+
+  //for (let i = 0; i <= 10; i++) {
+  //console.log(chroma(d3.interpolateGreens(i / 10)).hcl());
+  //}
 
   useEffect(() => {
     let totalBins = 0;
@@ -583,7 +588,6 @@ function App() {
               </Button>
               </Col>
             </Row>
-            <br />
             <div id='cluster-checkbox'>
               <Checkbox.Group style={{ 'width': '100%', }}
                 name='clusterCheckBox'
@@ -596,7 +600,6 @@ function App() {
                   setIfShowedCluster(ifShow);
                 }} />
             </div>
-            <br />
             <Divider>Color Options</Divider>
             <div id="hue-picker"></div>
             <Row>
@@ -707,6 +710,20 @@ function App() {
                 Click to Upload
               </Button>
             </Upload>
+
+            <Button type="default" block style={{ width: "55%" }} icon={<DownloadOutlined />}
+              onClick={
+                () => {
+                  const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+                  const img = canvas.toDataURL("image/png");
+                  const link = document.createElement('a');
+                  link.download = 'image.png';
+                  link.href = img;
+                  link.click();
+                }
+              }>
+              Download Image
+            </Button>
           </Sider>
           <Content>
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
