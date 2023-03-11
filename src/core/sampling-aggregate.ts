@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-04 22:54:55
+ * @LastEditTime: 2023-03-11 16:31:05
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -132,7 +132,7 @@ export function getNearestClusterNodeId(bin: Set<number>, hc: Hierarchical) {
     return hc.nodes[minIndex].id;
 }
 
-export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: number[] = []): number[] {
+export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: number[] = []): [number[], number[]] {
     const hues = new Array(bins.length * bins[0].length).fill(0);
     if (hc.nodes.length <= 1) {
         const flattenBins: [[number, number], Set<number>][] = [];
@@ -145,7 +145,7 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
         }
         hc.nodes[0].flattenBins = flattenBins;
         hc.nodes[0].hue = 0;
-        return hues;
+        return [[0], new Array(bins.length * bins[0].length).fill(0)];
     }
 
     const modelCentroids: number[][] = [];
@@ -166,14 +166,16 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
 
 
     const hueOfModelCentroids = circularMDS(modelCentroids, 0.1, 10000, fixItem, predefinedHues);
+    const binClusterAssignment: number[] = new Array(bins.length * bins[0].length).fill(0);
 
     for (let i = 0; i < hc.nodes.length; i++) {
         hc.nodes[i].hue = hueOfModelCentroids[i];
         const node = hc.nodes[i];
         for (const flattenBin of node.flattenBins as [[number, number], Set<number>][]) {
-            hues[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = hueOfModelCentroids[i];
+            //hues[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = hueOfModelCentroids[i];
+            binClusterAssignment[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = i;
         }
     }
 
-    return hues;
+    return [hueOfModelCentroids, binClusterAssignment];
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-03-04 22:42:33
+ * @LastEditTime: 2023-03-11 00:28:17
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -38,21 +38,19 @@ interface CanvasProps {
     hues: number[];
     binDensity: { [key: number]: [[number, number], number][]; };
     binsInfo: BinningMap;
-    clusterProbs: number[][];
-    lineProbsofEachCluster: number[][];
     minDisplayDensity: number;
     divideCluster: (x: number, y: number) => void;
 }
 
 export default function Canvas(props: CanvasProps) {
 
-    const [isMouseDown, setIsMouseDown] = useState(false);
-    const [strokeWidth, setStrokeWidth] = useState(29);
-    const [strokePickedGrid, setStrokePickedGrid] = useState<Set<string>>(new Set());
+    //const [isMouseDown, setIsMouseDown] = useState(false);
+    //const [strokeWidth, setStrokeWidth] = useState(29);
+    //const [strokePickedGrid, setStrokePickedGrid] = useState<Set<string>>(new Set());
     //const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
-    const [clusterLabls, setClusterLabels] = useState<number[][]>([]);
+    //const [clusterLabls, setClusterLabels] = useState<number[][]>([]);
     const [clickPoint, setClickPoint] = useState<[number, number] | null>(null);
-    const [maxDenstyValue, setMaxDensityValue] = useState<number>(0);
+    //const [maxDenstyValue, setMaxDensityValue] = useState<number>(0);
 
     //const pickedGrid = new Set<string>();
 

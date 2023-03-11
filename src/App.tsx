@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-07 13:13:22
+ * @LastEditTime: 2023-03-11 16:25:09
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -123,7 +123,6 @@ function App() {
   const [canvasWidth, setCanvasWidth] = useState<number>(1000);
   const [canvasHeight, setCanvasHeight] = useState<number>(500);
   const [hueCenters, setHueCenters] = useState<number[]>([]);
-  const [clusterProbs, setClusterProbs] = useState<number[][]>([]);
   const [binsInfo, setBinsInfo] = useState<BinningMap>([]);
   const [hueTemplateType, setHueTemplateType] = useState<string>('N-Type');
   const [hueTemplateRotation, setHueTemplateRotation] = useState<number>(0);
@@ -131,7 +130,7 @@ function App() {
   const [clusterOptions, setClusterOptions] = useState<(string | number | CheckboxOptionType)[]>([]);
   const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
-  const [lineProbsofEachCluster, setLineProbsofEachCluster] = useState<number[][]>([]);
+  const [binClusterAssignment, setBinClusterAssignment] = useState<number[]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
   const [samplingRate, setSamplingRate] = useState<number>(0.001);
@@ -145,6 +144,19 @@ function App() {
   //for (let i = 0; i <= 10; i++) {
   //console.log(chroma(d3.interpolateGreens(i / 10)).hcl());
   //}
+
+  useEffect(() => {
+    const newHues = [];
+    console.log('binClusterAssignment:', binClusterAssignment);
+    console.log('hueCenters:', hueCenters);
+    for (let i = 0; i < binClusterAssignment.length; i++) {
+      if (binClusterAssignment[i] < hueCenters.length) {
+        newHues.push(hueCenters[binClusterAssignment[i]]);
+      }
+    }
+    console.log('newHues:', newHues);
+    setHues(newHues);
+  }, [binClusterAssignment, hueCenters])
 
   useEffect(() => {
     let totalBins = 0;
@@ -185,46 +197,13 @@ function App() {
       return;
     }
     setHC(hc);
-    const hues = getHues(bins, hc);
-    setHues(hues);
+    const [newHueCenters, newBinClusterAssignment] = getHues(bins, hc);
+    setHueCenters(newHueCenters);
+    setBinClusterAssignment(newBinClusterAssignment);
+    //setHues(hues);
 
   }, [binSize, canvasHeight, canvasWidth, lines, minDensity, samplingRate]);
 
-
-  useEffect(() => {
-    if (clusterProbs.length === 0) {
-      return;
-    }
-
-    let dotProduct = (a: number[], b: number[]) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
-    setHues(clusterProbs.map(clusterProb => dotProduct(clusterProb, hueCenters)));
-    if (hueCenters.length !== undefined && binsInfo.length > 0) {
-      //console.log(binsInfo);
-      const lineProbsofClusters = Array(lines.length).fill(0).map(() => Array(hueCenters.length).fill(0));
-      for (let i = 0; i < binsInfo.length; ++i) {
-        const clusterLineSetForThisTime = [];
-
-        for (let k = 0; k < hueCenters.length; ++k) {
-          clusterLineSetForThisTime.push(new Set());
-        }
-
-        for (let j = 0; j < binsInfo[i].length; ++j) {
-          if (i * binsInfo[i].length + j < clusterProbs.length) {
-            const clusterOfThisBin = argMax(clusterProbs[i * binsInfo[i].length + j]);
-            const lineSet = binsInfo[i][j];
-            for (let lineID of lineSet) {
-              if (!clusterLineSetForThisTime[clusterOfThisBin].has(lineID)) {
-                lineProbsofClusters[lineID][clusterOfThisBin] += 1 / binsInfo.length;
-                clusterLineSetForThisTime[clusterOfThisBin].add(lineID);
-              }
-            }
-          }
-        }
-      }
-      console.log(lineProbsofClusters);
-      setLineProbsofEachCluster(lineProbsofClusters);
-    }
-  }, [hueCenters, clusterProbs, binsInfo, lines.length]);
 
   useEffect(() => {
     if (hueTemplateType !== 'N-Type') {
@@ -497,7 +476,7 @@ function App() {
     }
 
     const getHueByPos = (X: number, Y: number) => getAngle(0, -100, X, Y)
-  }, [hueCenters, clusterProbs, hues, binDensity, hueTemplateType, hueTemplateRotation, hueTemplateDomain]);
+  }, [hueCenters, hues, binDensity, hueTemplateType, hueTemplateRotation, hueTemplateDomain]);
 
 
   useEffect(() => {
@@ -728,7 +707,6 @@ function App() {
           <Content>
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
               binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
-              clusterProbs={clusterProbs} lineProbsofEachCluster={lineProbsofEachCluster}
               minDisplayDensity={minDisplayDensity}
               divideCluster={(x, y) => {
                 const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
@@ -743,8 +721,9 @@ function App() {
                 }
 
                 clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
-                const newHues = getHues(binsInfo, hc as Hierarchical, preservedHues);
-                setHues(newHues);
+                const [newHueCenters, newBinClusterAssignment] = getHues(binsInfo, hc as Hierarchical, preservedHues);
+                setHueCenters(newHueCenters);
+                setBinClusterAssignment(newBinClusterAssignment);
               }}></Canvas>
           </Content>
         </Layout>
