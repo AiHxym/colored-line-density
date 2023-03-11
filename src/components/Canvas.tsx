@@ -128,7 +128,6 @@ export default function Canvas(props: CanvasProps) {
                     setClickPoint([mouseX, props.height - mouseY]);
 
                 }}></canvas>
-            <canvas id="extra" width={props.width} height={props.height}></canvas>
             <svg id="extra-renderer" style={{
                 width: props.width + 'px',
                 height: props.height + 'px',

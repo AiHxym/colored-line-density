@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-11 16:25:09
+ * @LastEditTime: 2023-03-11 21:49:54
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -31,6 +31,7 @@ let a2 = 360 * 0.22;  // L
 let a3 = 360 * 0.26;  // V, Y, X
 let a4 = 360 * 0.50;  // T
 let hueTemplates: { [key: string]: number[] } = {};
+hueTemplates['N-Type'] = [360, 360];  // center
 hueTemplates['i-Type'] = [360, a1];  // center, range
 hueTemplates['V-Type'] = [360, a3];
 hueTemplates['T-Type'] = [360, a4];
@@ -140,22 +141,23 @@ function App() {
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
   const [sampledBinNum, setSampledBinNum] = useState<number>(0);
 
-
-  //for (let i = 0; i <= 10; i++) {
-  //console.log(chroma(d3.interpolateGreens(i / 10)).hcl());
-  //}
-
   useEffect(() => {
     const newHues = [];
-    console.log('binClusterAssignment:', binClusterAssignment);
-    console.log('hueCenters:', hueCenters);
     for (let i = 0; i < binClusterAssignment.length; i++) {
       if (binClusterAssignment[i] < hueCenters.length) {
         newHues.push(hueCenters[binClusterAssignment[i]]);
       }
     }
-    console.log('newHues:', newHues);
     setHues(newHues);
+
+    const newClusterOptions = [];
+    for (let i = 0; i < hueCenters.length; i++) {
+      newClusterOptions.push({
+        label: `Cluster ${i}`,
+        value: i,
+      });
+    }
+    setClusterOptions(newClusterOptions);
   }, [binClusterAssignment, hueCenters])
 
   useEffect(() => {
@@ -165,7 +167,6 @@ function App() {
         totalBins += flattenBins.length;
       }
     }
-    console.log('totalBins:', totalBins);
     setSampledBinNum(Math.floor(totalBins * displaySamplingRate));
   }, [binDensity, displaySamplingRate, minDisplayDensity]);
 
@@ -214,7 +215,7 @@ function App() {
       let init_c: number[] = [];  // store initial centers
       let starts: number[] = [];  // starting hue of each sector
       let ranges: number[] = [];  // ranges of each sector
-      let newDomain = new Array();
+      let newDomain: number[] = [];
       // let rotation = 0; // rotation of the template
       if (singleSector.includes(hueTemplateType)) {
         centers = [Math.floor(ht[0])];
@@ -348,7 +349,7 @@ function App() {
       let init_c: number[] = [];  // store initial centers
       let starts: number[] = [];  // starting hue of each sector
       let ranges: number[] = [];  // ranges of each sector
-      let newDomain = new Array();
+      let newDomain: number[] = [];
       let init_mx = 0;  // store initial mouse pos for every drag
       let init_my = 0;
       // let rotation = 0; // rotation of the template
@@ -491,7 +492,6 @@ function App() {
   }, [ifShowedCluster])
 
   useEffect(() => {
-
     const color_C = 120;
     const color_L = 55;
     let checkboxColors = hueCenters.map((h) => d3.hcl(h, color_C, color_L).formatHex())
@@ -509,7 +509,9 @@ function App() {
   return (
     <div className="App">
       <Layout>
-        <Header></Header>
+        <Header className='App-header'>
+          <b style={{ color: 'white' }}>Colored Line Density Plot</b>
+        </Header>
         <Layout>
           <Sider width={300} theme="light" className="site-layout-background">
             <Divider>Parameters</Divider>
@@ -567,6 +569,7 @@ function App() {
               </Button>
               </Col>
             </Row>
+            <Divider>Cluster Options</Divider>
             <div id='cluster-checkbox'>
               <Checkbox.Group style={{ 'width': '100%', }}
                 name='clusterCheckBox'
@@ -727,7 +730,10 @@ function App() {
               }}></Canvas>
           </Content>
         </Layout>
-        <Footer>CGMI.UNI.KN ©2022 Created by Yumeng Xue</Footer>
+        <Footer className='App-footer' style={{ display: 'none' }}>
+          Created by Yumeng Xue
+          <a href='https://www.cgmi.uni-konstanz.de/'>CGMI.UNI.KN ©2022</a>
+        </Footer>
       </Layout >
     </div>
   );
