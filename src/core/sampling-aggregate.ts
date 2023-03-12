@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-11 16:31:05
+ * @LastEditTime: 2023-03-12 14:23:54
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -132,8 +132,8 @@ export function getNearestClusterNodeId(bin: Set<number>, hc: Hierarchical) {
     return hc.nodes[minIndex].id;
 }
 
-export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: number[] = []): [number[], number[]] {
-    const hues = new Array(bins.length * bins[0].length).fill(0);
+export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: number[] = [], ifFixClusterColor: boolean[] = []): [number[], number[]] {
+    //const hues = new Array(bins.length * bins[0].length).fill(0);
     if (hc.nodes.length <= 1) {
         const flattenBins: [[number, number], Set<number>][] = [];
         for (let i = 0; i < bins.length; i++) {
@@ -153,10 +153,10 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
         modelCentroids.push(node.centroid as number[]);
     }
 
-    const fixItem = [];
-    for (let i = 0; i < modelCentroids.length - 2; i++) {
-        fixItem.push(i);
-    }
+    //const fixItem = [];
+    //for (let i = 0; i < modelCentroids.length - 2; i++) {
+    //fixItem.push(i);
+    //}
 
     const predefinedHues = previosHues.slice();
 
@@ -165,7 +165,7 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
     }
 
 
-    const hueOfModelCentroids = circularMDS(modelCentroids, 0.1, 10000, fixItem, predefinedHues);
+    const hueOfModelCentroids = circularMDS(modelCentroids, 0.1, 10000, ifFixClusterColor, predefinedHues);
     const binClusterAssignment: number[] = new Array(bins.length * bins[0].length).fill(0);
 
     for (let i = 0; i < hc.nodes.length; i++) {

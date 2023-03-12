@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-11 21:49:54
+ * @LastEditTime: 2023-03-13 00:56:54
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -130,6 +130,7 @@ function App() {
   const [hueTemplateDomain, setHueTemplateDomain] = useState<number[]>(Array.from(Array(360), (_, i) => i));
   const [clusterOptions, setClusterOptions] = useState<(string | number | CheckboxOptionType)[]>([]);
   const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
+  const [ifFixClusterColor, setIfFixClusterColor] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
   const [binClusterAssignment, setBinClusterAssignment] = useState<number[]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
@@ -141,6 +142,16 @@ function App() {
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
   const [sampledBinNum, setSampledBinNum] = useState<number>(0);
 
+  useEffect(() => { // update checkboxState
+    const newCheckboxState = [];
+    for (let i = 0; i < hueCenters.length; i++) {
+      if (ifFixClusterColor[i]) {
+        newCheckboxState.push(i);
+      }
+    }
+    setCheckboxState(newCheckboxState);
+  }, [hueCenters, ifFixClusterColor])
+
   useEffect(() => {
     const newHues = [];
     for (let i = 0; i < binClusterAssignment.length; i++) {
@@ -151,13 +162,16 @@ function App() {
     setHues(newHues);
 
     const newClusterOptions = [];
+    //const newIfFixClusterColor = [];
     for (let i = 0; i < hueCenters.length; i++) {
       newClusterOptions.push({
-        label: `Cluster ${i}`,
-        value: i,
+        label: '',
+        value: i
       });
+      // newIfFixClusterColor.push(false);
     }
     setClusterOptions(newClusterOptions);
+
   }, [binClusterAssignment, hueCenters])
 
   useEffect(() => {
@@ -436,6 +450,7 @@ function App() {
       .attr("cy", i => -Math.cos(hueCenters[i] * Math.PI / 180) * pos_radius)
       .attr("fill-opacity", 0.8)
       .attr("id", i => "hue-center" + i)
+      .attr("visibility", i => ifFixClusterColor[i] ? "hidden" : "visible")
       // draging interaction
       .call(d3.drag()
         .on("start", function (e) {
@@ -477,19 +492,19 @@ function App() {
     }
 
     const getHueByPos = (X: number, Y: number) => getAngle(0, -100, X, Y)
-  }, [hueCenters, hues, binDensity, hueTemplateType, hueTemplateRotation, hueTemplateDomain]);
+  }, [hueCenters, hues, binDensity, hueTemplateType, hueTemplateRotation, hueTemplateDomain, binsInfo, ifFixClusterColor]);
 
 
-  useEffect(() => {
-    ifShowedCluster.forEach((show, i) => {
-      if (show) {
-        d3.select('#hue-center' + i).attr('visibility', 'visible')
-      }
-      else {
-        d3.select('#hue-center' + i).attr('visibility', 'hidden')
-      }
-    })
-  }, [ifShowedCluster])
+  // useEffect(() => {
+  //   ifFixClusterColor.forEach((fix, i) => {
+  //     if (fix) {
+  //       d3.select('#hue-center' + i).attr('visibility', 'hidden')
+  //     }
+  //     else {
+  //       d3.select('#hue-center' + i).attr('visibility', 'visible')
+  //     }
+  //   })
+  // }, [ifFixClusterColor])
 
   useEffect(() => {
     const color_C = 120;
@@ -501,10 +516,16 @@ function App() {
       n.childNodes.forEach((n, i) => {
         (n as HTMLElement).style.setProperty("--background-color", checkboxColors[i]);
         (n as HTMLElement).style.setProperty("--border-color", checkboxColors[i]);
+        const checkBoxInner = (n as HTMLElement).childNodes[0].childNodes[1] as HTMLElement;
+        console.log(checkBoxInner);
+        if (checkBoxInner !== undefined) {
+          checkBoxInner.style.setProperty("background-color", checkboxColors[i]);
+          checkBoxInner.style.setProperty("border-color", checkboxColors[i]);
+        }
       })
     })
 
-  }, [hueCenters]);
+  }, [hueCenters, clusterOptions]);
 
   return (
     <div className="App">
@@ -570,6 +591,9 @@ function App() {
               </Col>
             </Row>
             <Divider>Cluster Options</Divider>
+            <Row>
+              <Col span={24} >Fix Cluster Color</Col>
+            </Row>
             <div id='cluster-checkbox'>
               <Checkbox.Group style={{ 'width': '100%', }}
                 name='clusterCheckBox'
@@ -577,9 +601,9 @@ function App() {
                 value={checkboxState}
                 onChange={(value) => {
                   setCheckboxState(value);
-                  let ifShow = new Array(hueCenters.length).fill(false)
-                  value.forEach((v) => { ifShow[v as number] = true; })
-                  setIfShowedCluster(ifShow);
+                  let newIfFixClusterColor = new Array(hueCenters.length).fill(false)
+                  value.forEach((v) => { newIfFixClusterColor[v as number] = true; })
+                  setIfFixClusterColor(newIfFixClusterColor);
                 }} />
             </div>
             <Divider>Color Options</Divider>
@@ -715,18 +739,28 @@ function App() {
                 const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
                 const preservedHues = [];
 
+                const newIfFixClusterColor = [...ifFixClusterColor];
                 if (hc?.nodes !== undefined) {
                   for (let i = 0; i < hc.nodes.length; ++i) {
                     if (nearestClusterId !== hc.nodes[i].id) {
-                      preservedHues.push(hc.nodes[i].hue as number);
+                      preservedHues.push(hueCenters[i] as number);
+                    } else {
+                      if (ifFixClusterColor[i]) {
+                        alert('This cluster has been fixed!');
+                        return;
+                      }
+                      newIfFixClusterColor.splice(i, 1);
                     }
                   }
                 }
+                newIfFixClusterColor.push(false);
+                newIfFixClusterColor.push(false);
 
                 clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
-                const [newHueCenters, newBinClusterAssignment] = getHues(binsInfo, hc as Hierarchical, preservedHues);
+                const [newHueCenters, newBinClusterAssignment] = getHues(binsInfo, hc as Hierarchical, preservedHues, newIfFixClusterColor);
                 setHueCenters(newHueCenters);
                 setBinClusterAssignment(newBinClusterAssignment);
+                setIfFixClusterColor(newIfFixClusterColor);
               }}></Canvas>
           </Content>
         </Layout>
@@ -735,7 +769,7 @@ function App() {
           <a href='https://www.cgmi.uni-konstanz.de/'>CGMI.UNI.KN ©2022</a>
         </Footer>
       </Layout >
-    </div>
+    </div >
   );
 }
 
