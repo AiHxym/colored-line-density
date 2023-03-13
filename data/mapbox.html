@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset='utf-8' />
+	<title>Mapbox</title>
+	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+	<script src='https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js'></script>
+	<link href='https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css' rel='stylesheet' />
+	<style>
+		/* #map { position: absolute; top: 0; bottom: 0; width: 100%; } */
+		/* #map { width: 480px; height: 620px;} */
+		#map { height: 600px;}
+	</style>
+</head>
+<body>
+	<div id='map'></div>
+	<!-- PNG saver -->
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'></script>
+	<!-- SVG saver -->
+	<link href='https://watergis.github.io/mapbox-gl-export/mapbox-gl-export.css' rel='stylesheet' />
+	<script src="https://watergis.github.io/mapbox-gl-export/mapbox-gl-export.js"></script>
+	<script>
+		// read the csv file of the trajectory data by a upload button
+		// store the data in a variable called data_table, as a JSON object
+		let corners = [] // [xMax, xMin, yMax, yMin]
+		const button_file = document.createElement('button')
+		button_file.textContent = 'File'
+		button_file.addEventListener('click', function () {
+			const input = document.createElement('input')
+			input.type = 'file'
+			input.addEventListener('change', function () {
+				const file = input.files[0]
+				const reader = new FileReader()
+				reader.addEventListener('load', function () {
+					const text = reader.result
+					const lines = text.split('\n')
+					const xIdx = lines[0].split(',').indexOf('x')
+					const yIdx = lines[0].split(',').indexOf('y')
+					const line1 = lines[1].split(',')
+					const x1 = parseFloat(parseFloat(line1[xIdx]))
+					const y1 = parseFloat(parseFloat(line1[yIdx]))
+					let c = [x1, x1, y1, y1]
+					lines.slice(1).map(line => {
+						if (line === '') return
+						const values = line.split(',')
+						const x = parseFloat(values[xIdx])
+						const y = parseFloat(values[yIdx])
+						if (x > c[0]) c[0] = x
+						if (x < c[1]) c[1] = x
+						if (y > c[2]) c[2] = y
+						if (y < c[3]) c[3] = y
+					})
+					corners = c
+				})
+				reader.readAsText(file)
+			})
+			input.click()
+		})
+		document.body.appendChild(button_file)
+
+		// once corners is loaded, draw the map
+		const interval = setInterval(function () {
+			if (corners.length === 4) {
+				clearInterval(interval)
+				drawMap()
+			}
+		}, 100)
+
+		function drawMap() {
+			const xMax = corners[0]
+			const xMin = corners[1]
+			const yMax = corners[2]
+			const yMin = corners[3]
+			corners = []	// reset corners to empty
+			console.log(xMax, xMin, yMax, yMin)
+
+			// Atlantic
+			// const LAT = [-84, -60]	// 24
+			// const LNG = [15, 46]	// 31
+			// Corners of the map
+			const LAT = [xMin, xMax]
+			const LNG = [yMin, yMax]
+			const latPadding = (LAT[1] - LAT[0]) * 0.02
+			const lngPadding = (LNG[1] - LNG[0]) * 0.02
+			// Boundary of the map
+			const mapCenter = [(LAT[0] + LAT[1]) / 2, (LNG[0] + LNG[1]) / 2]
+			const mapBounds = new mapboxgl.LngLatBounds(
+				new mapboxgl.LngLat(LAT[0]-latPadding, LNG[0]-lngPadding),
+				new mapboxgl.LngLat(LAT[1]+latPadding, LNG[1]+lngPadding)
+			)
+
+			mapboxgl.accessToken = 'pk.eyJ1IjoiY29kZWIiLCJhIjoiY2xmMTd3endtMDVxcTNycG5zdTcwc3k4NyJ9.cwt8ufYwkJNbrJ6ey3QPpQ'
+			const map = new mapboxgl.Map({
+				container: 'map',
+				bounds: mapBounds,
+				// center: mapCenter,
+				// zoom: 3,
+				style: 'mapbox://styles/mapbox/light-v10',
+				// style: 'mapbox://styles/mapbox/streets-v12',
+			})
+
+			// Add a botton to remove text labels from all layers
+			const button_text_remove = document.createElement('button')
+			button_text_remove.textContent = 'Remove Labels'
+			button_text_remove.addEventListener('click', function () {
+				map.getStyle().layers.forEach(function (layer) {
+					if (layer.type === 'symbol' && layer.layout['text-field']) {
+						map.setLayoutProperty(layer.id, 'text-field', ['format', ['get', 'name_en'], { 'font-scale': 0.01 }])
+					}
+				})
+			})
+			document.body.appendChild(button_text_remove)
+
+			// Add a botton to recover text labels from all layers
+			const button_text_recover = document.createElement('button')
+			button_text_recover.textContent = 'Recover Labels'
+			button_text_recover.addEventListener('click', function () {
+				map.getStyle().layers.forEach(function (layer) {
+					if (layer.type === 'symbol' && layer.layout['text-field']) {
+						map.setLayoutProperty(layer.id, 'text-field', ['get', 'name_en'])
+					}
+				})
+			})
+			document.body.appendChild(button_text_recover)
+			
+			// Add a botton to draw dash and gray boundary lines to the map
+			const button_boundary = document.createElement('button')
+			button_boundary.textContent = 'Draw Boundary'
+			button_boundary.addEventListener('click', function () {
+				map.addSource('boundary', {
+					'type': 'geojson',
+					'data': {
+						'type': 'FeatureCollection',
+						'features': [{
+							'type': 'Feature',
+							'geometry': {
+								'type': 'LineString',
+								'coordinates': [
+									[LAT[0], LNG[0]],
+									[LAT[1], LNG[0]],
+									[LAT[1], LNG[1]],
+									[LAT[0], LNG[1]],
+									[LAT[0], LNG[0]],
+								]
+							}
+						}]
+					}
+				})
+				map.addLayer({
+					'id': 'boundary',
+					'type': 'line',
+					'source': 'boundary',
+					'layout': {
+						'line-join': 'round',
+						'line-cap': 'round'
+					},
+					'paint': {
+						'line-color': '#888888',
+						'line-dasharray': [2, 2],
+						'line-width': 1
+					}
+				})
+			})
+			document.body.appendChild(button_boundary)
+
+			// Add a botton to remove the boundary lines from the map
+			const button_boundary_remove = document.createElement('button')
+			button_boundary_remove.textContent = 'Remove Boundary'
+			button_boundary_remove.addEventListener('click', function () {
+				if (!map.getLayer('boundary')) return
+				map.removeLayer('boundary')
+				map.removeSource('boundary')
+			})
+			document.body.appendChild(button_boundary_remove)
+
+			// not work: adjust coastlines and cities styles
+			/*
+			map.on('load', function () {
+				map.addSource('waterway', {
+					'type': 'vector',
+					'url': 'mapbox://styles/mapbox/streets-v12'
+				})
+				map.addLayer({
+					'id': 'coastlines',
+					'type': 'line',
+					'source': 'waterway',
+					'source-layer': 'waterway',
+					'filter': [
+						'all',
+						['==', '$type', 'LineString']
+					],
+					'paint': {
+						'line-color': '#007cbf',
+						'line-width': 1
+					}
+				})
+				map.addSource('cities', {
+					'type': 'vector',
+					'url': 'mapbox://styles/mapbox/streets-v12'
+				})
+				map.addLayer({
+					'id': 'cities',
+					'type': 'symbol',
+					'source': 'cities',
+					'source-layer': 'place_label',
+					'filter': [
+						'all',
+						['in', 'class', 'city', 'town'],
+						['>=', 'rank', 3]
+					],
+					'layout': {
+						'text-field': '{name_en}',
+						'text-size': 14,
+						'text-offset': [0, 1.5],
+						'text-anchor': 'top'
+					},
+					'paint': {
+						'text-color': '#666666',
+						'text-halo-color': '#ffffff',
+						'text-halo-width': 1
+					}
+				})
+			})
+			*/
+
+			// // save map as local png file
+			// map.on('load', function () {
+			// 	map.getCanvas().toBlob(function (blob) {
+			// 		saveAs(blob, 'map.png')
+			// 	})
+			// })
+
+			// save map as local svg file using mapbox-gl-export
+			map.on('load', function () {
+				const mapboxExportControl = new MapboxExportControl({
+					// accessToken: mapboxgl.accessToken,
+					filename: 'map',
+					format: 'svg',
+				})
+				map.addControl(mapboxExportControl, 'top-right')
+			})
+		}
+
+	</script>
+</body>
+</html>
