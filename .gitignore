@@ -23,4 +23,6 @@ yarn-debug.log*
 yarn-error.log*
 
 data/*
+!data/*.py
 !data/mapbox.html
+!data/result_images
