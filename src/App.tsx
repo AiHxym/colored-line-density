@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-13 00:56:54
+ * @LastEditTime: 2023-03-14 00:16:54
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -132,6 +132,7 @@ function App() {
   const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
   const [ifFixClusterColor, setIfFixClusterColor] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
+  const [clusterPickerCheckboxState, setClusterPickerCheckboxState] = useState<CheckboxValueType[]>([]);
   const [binClusterAssignment, setBinClusterAssignment] = useState<number[]>([]);
   const [hc, setHC] = useState<Hierarchical | undefined>(undefined);
   const [lineSet, setLineSet] = useState<Set<number>>(new Set());
@@ -141,6 +142,10 @@ function App() {
   const [minDensity, setMinDensity] = useState<number>(0);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
   const [sampledBinNum, setSampledBinNum] = useState<number>(0);
+
+  useEffect(() => { // update drawing when clusterPickerCheckboxState changed
+    console.log(clusterPickerCheckboxState);
+  }, [clusterPickerCheckboxState])
 
   useEffect(() => { // update checkboxState
     const newCheckboxState = [];
@@ -509,7 +514,7 @@ function App() {
   useEffect(() => {
     const color_C = 120;
     const color_L = 55;
-    let checkboxColors = hueCenters.map((h) => d3.hcl(h, color_C, color_L).formatHex())
+    let checkboxColors = hueCenters.map((h) => d3.hcl(h, color_C, color_L).formatHex());
 
     let cluster_checkbox = document.getElementById('cluster-checkbox');
     cluster_checkbox?.childNodes.forEach((n) => {
@@ -522,8 +527,22 @@ function App() {
           checkBoxInner.style.setProperty("background-color", checkboxColors[i]);
           checkBoxInner.style.setProperty("border-color", checkboxColors[i]);
         }
-      })
-    })
+      });
+    });
+
+    let clusterPickerCheckbox = document.getElementById('cluster-picker-checkbox');
+    clusterPickerCheckbox?.childNodes.forEach((n) => {
+      n.childNodes.forEach((n, i) => {
+        (n as HTMLElement).style.setProperty("--background-color", checkboxColors[i]);
+        (n as HTMLElement).style.setProperty("--border-color", checkboxColors[i]);
+        const checkBoxInner = (n as HTMLElement).childNodes[0].childNodes[1] as HTMLElement;
+        console.log(checkBoxInner);
+        if (checkBoxInner !== undefined) {
+          checkBoxInner.style.setProperty("background-color", checkboxColors[i]);
+          checkBoxInner.style.setProperty("border-color", checkboxColors[i]);
+        }
+      });
+    });
 
   }, [hueCenters, clusterOptions]);
 
@@ -604,6 +623,18 @@ function App() {
                   let newIfFixClusterColor = new Array(hueCenters.length).fill(false)
                   value.forEach((v) => { newIfFixClusterColor[v as number] = true; })
                   setIfFixClusterColor(newIfFixClusterColor);
+                }} />
+            </div>
+            <Row>
+              <Col span={24} >Pick Cluster</Col>
+            </Row>
+            <div id='cluster-picker-checkbox'>
+              <Checkbox.Group style={{ 'width': '100%', }}
+                name='clusterCheckBox'
+                options={clusterOptions}
+                value={clusterPickerCheckboxState}
+                onChange={(value) => {
+                  setClusterPickerCheckboxState(value);
                 }} />
             </div>
             <Divider>Color Options</Divider>
@@ -732,6 +763,7 @@ function App() {
             </Button>
           </Sider>
           <Content>
+            <div style={{ height: "20px" }} />
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
               binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
               minDisplayDensity={minDisplayDensity}
