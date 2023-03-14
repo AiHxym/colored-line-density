@@ -1,17 +1,13 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-14 10:30:12
+ * @LastEditTime: 2023-03-14 12:43:23
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
  */
 import circularMDS from "./circular-MDS";
-import { Hierarchical } from "./hierarchical-clustering";
-
-function union(set1: Set<number>, set2: Set<number>): Set<number> {
-    return new Set([...set1, ...set2]);
-}
+import { Hierarchical, intersection, union, overlapCoefficientDistance } from "./hierarchical-clustering";
 
 function getRandomSubarray(arr: any[], size: number) {
     var shuffled = arr.slice(0), i = arr.length, min = i - size, temp, index;
@@ -180,7 +176,7 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
     return [hueOfModelCentroids, binClusterAssignment];
 }
 
-export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: Hierarchical, pickedClusters: number[]): [number[], number[]] {
+export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: Hierarchical, pickedClusters: number[]): [number[][], number[]] {
     const binDensity: number[][] = new Array(bins.length).fill(0).map(v => new Array(bins[0].length).fill(0));
 
     const modelCentroids: number[][] = [];
@@ -189,8 +185,9 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
     }
 
     const lineSets = [];
-    for (const node of hc.nodes) {
-        if (pickedClusters.indexOf(node.id) === -1) {
+    for (let nodeInx = 0; nodeInx < hc.nodes.length; nodeInx++) {
+        const node = hc.nodes[nodeInx];
+        if (pickedClusters.indexOf(nodeInx) === -1) {
             continue;
         }
         const lineSet = new Set<number>();
@@ -202,15 +199,30 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
         lineSets.push(lineSet);
     }
 
+    console.log(lineSets);
+
     const binClusterAssignment: number[] = new Array(bins.length * bins[0].length).fill(0);
 
-    for (let i = 0; i < hc.nodes.length; i++) {
-        const node = hc.nodes[i];
-        for (const flattenBin of node.flattenBins as [[number, number], Set<number>][]) {
-            //hues[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = hueOfModelCentroids[i];
-            binClusterAssignment[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = i;
+    for (let i = 0; i < bins.length; i++) {
+        for (let j = 0; j < bins[i].length; j++) {
+            const bin = bins[i][j];
+            let minDistance = Infinity;
+            for (let k = 0; k < lineSets.length; k++) {
+                const lineSet = lineSets[k];
+                if (overlapCoefficientDistance(bin, lineSet) < minDistance) {
+                    binClusterAssignment[i * bins[0].length + j] = pickedClusters[k];
+                    binDensity[i][j] = intersection(bin, lineSet).size;
+                    minDistance = overlapCoefficientDistance(bin, lineSet);
+                }
+            }
+        }
+    }
+    const binDensityMax = Math.max(...binDensity.map(v => Math.max(...v)));
+    for (let i = 0; i < bins.length; i++) {
+        for (let j = 0; j < bins[i].length; j++) {
+            binDensity[i][j] /= binDensityMax;
         }
     }
 
-    return [, binClusterAssignment];
+    return [binDensity, binClusterAssignment];
 }

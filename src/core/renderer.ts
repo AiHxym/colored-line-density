@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2023-03-07 14:40:41
+ * @LastEditTime: 2023-03-14 13:04:00
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -98,6 +98,34 @@ export function renderMinus(densityValue: number, bins: BinningMap, binDensity: 
             const binX = i * binWidth;
             const binY = (bins[i].length - j) * binHeight;
             const binColor = "#ffffff";
+            ctx.fillStyle = binColor;
+            ctx.fillRect(binX, binY, binWidth, binHeight);
+        }
+    }
+}
+
+export function renderPicked(canvas: HTMLCanvasElement, bins: BinningMap, binDensity: number[][], binSize: number, hues: number[]): void {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        throw new Error("Failed to get canvas context");
+    }
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const binWidth = width / bins.length;
+    const binHeight = height / bins[0].length;
+
+    for (let i = 0; i < bins.length; i++) {
+        for (let j = 0; j < bins[i].length; j++) {
+            const binX = i * binWidth;
+            const binY = (bins[i].length - j) * binHeight;
+            let binColor = "white";
+            if (hues.length > 0 && hues[Math.floor(i / binSize) * Math.round(bins[i].length / binSize) + Math.floor(j / binSize)] !== undefined) {
+                //console.log(i, j);
+                binColor = chroma.hcl(hues[Math.floor(i / binSize) * Math.round(bins[i].length / binSize) + Math.floor(j / binSize)],
+                    Math.pow(minChroma + (maxChroma - minChroma) * binDensity[i][j], 1) * 100,
+                    Math.pow(maxLuminance - (maxLuminance - minLuminance) * binDensity[i][j], 1) * 100).hex();
+            }
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);
         }

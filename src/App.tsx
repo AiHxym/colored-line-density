@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-14 00:16:54
+ * @LastEditTime: 2023-03-14 12:56:36
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -20,7 +20,7 @@ import * as d3 from 'd3';
 
 import './App.css';
 import { BinningMap, binning } from './core/binning';
-import { samplingAggregate, clusterDivision, getNearestClusterNodeId, getHues } from './core/sampling-aggregate'
+import { samplingAggregate, clusterDivision, getNearestClusterNodeId, getHues, getHuesAndDensitiesForClusterPicker } from './core/sampling-aggregate'
 import { Hierarchical } from './core/hierarchical-clustering'
 
 const { Header, Footer, Sider, Content } = Layout;
@@ -142,6 +142,8 @@ function App() {
   const [minDensity, setMinDensity] = useState<number>(0);
   const [minDisplayDensity, setMinDisplayDensity] = useState<number>(0);
   const [sampledBinNum, setSampledBinNum] = useState<number>(0);
+  const [pickedBinDensity, setPickedBinDensity] = useState<number[][]>([]);
+  const [pickedHues, setPickedHues] = useState<number[]>([]);
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
     console.log(clusterPickerCheckboxState);
@@ -522,7 +524,6 @@ function App() {
         (n as HTMLElement).style.setProperty("--background-color", checkboxColors[i]);
         (n as HTMLElement).style.setProperty("--border-color", checkboxColors[i]);
         const checkBoxInner = (n as HTMLElement).childNodes[0].childNodes[1] as HTMLElement;
-        console.log(checkBoxInner);
         if (checkBoxInner !== undefined) {
           checkBoxInner.style.setProperty("background-color", checkboxColors[i]);
           checkBoxInner.style.setProperty("border-color", checkboxColors[i]);
@@ -536,7 +537,6 @@ function App() {
         (n as HTMLElement).style.setProperty("--background-color", checkboxColors[i]);
         (n as HTMLElement).style.setProperty("--border-color", checkboxColors[i]);
         const checkBoxInner = (n as HTMLElement).childNodes[0].childNodes[1] as HTMLElement;
-        console.log(checkBoxInner);
         if (checkBoxInner !== undefined) {
           checkBoxInner.style.setProperty("background-color", checkboxColors[i]);
           checkBoxInner.style.setProperty("border-color", checkboxColors[i]);
@@ -635,6 +635,12 @@ function App() {
                 value={clusterPickerCheckboxState}
                 onChange={(value) => {
                   setClusterPickerCheckboxState(value);
+                  if (hc) {
+                    const [newPickedBinDensity, pickedBinClusterAssignment] = getHuesAndDensitiesForClusterPicker(binsInfo, hc, value as number[]);
+                    setPickedBinDensity(newPickedBinDensity);
+                    const newPickedHues = pickedBinClusterAssignment.map((v) => { return hueCenters[v] });
+                    setPickedHues(newPickedHues);
+                  }
                 }} />
             </div>
             <Divider>Color Options</Divider>
@@ -793,7 +799,9 @@ function App() {
                 setHueCenters(newHueCenters);
                 setBinClusterAssignment(newBinClusterAssignment);
                 setIfFixClusterColor(newIfFixClusterColor);
-              }}></Canvas>
+              }}
+              pickedBinDensity={pickedBinDensity}
+              pickedHues={pickedHues}></Canvas>
           </Content>
         </Layout>
         <Footer className='App-footer' style={{ display: 'none' }}>

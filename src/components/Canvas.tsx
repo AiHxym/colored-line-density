@@ -1,14 +1,14 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-03-13 23:12:59
+ * @LastEditTime: 2023-03-14 13:04:40
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { BinningMap } from '../core/binning';
-import { render, renderMinus, renderPlus } from '../core/renderer';
+import { render, renderMinus, renderPlus, renderPicked } from '../core/renderer';
 import * as d3 from 'd3';
 
 function argMax(arr: number[]) {
@@ -40,6 +40,8 @@ interface CanvasProps {
     binsInfo: BinningMap;
     minDisplayDensity: number;
     divideCluster: (x: number, y: number) => void;
+    pickedBinDensity: number[][];
+    pickedHues: number[];
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -55,6 +57,13 @@ export default function Canvas(props: CanvasProps) {
     //const pickedGrid = new Set<string>();
 
     const prevMinDisplayDensityRef = useRef<number>();
+
+    useEffect(() => {
+        if (props.pickedBinDensity.length > 0 && props.pickedHues.length > 0) {
+            const canvas = document.getElementById('cluster-picker') as HTMLCanvasElement;
+            renderPicked(canvas, props.binsInfo, props.pickedBinDensity, props.binSize, props.pickedHues);
+        }
+    }, [props.binSize, props.binsInfo, props.pickedBinDensity, props.pickedHues]);
 
     useEffect(() => {
         if (clickPoint) {

@@ -1,14 +1,14 @@
 import FlatQueue from 'flatqueue';
 
-function intersection(set1: Set<number>, set2: Set<number>): Set<number> {
+export function intersection(set1: Set<number>, set2: Set<number>): Set<number> {
     return new Set([...set1].filter(x => set2.has(x)));
 }
 
-function union(set1: Set<number>, set2: Set<number>): Set<number> {
+export function union(set1: Set<number>, set2: Set<number>): Set<number> {
     return new Set([...set1, ...set2]);
 }
 
-function overlapCoefficientDistance(set1: Set<number>, set2: Set<number>): number {
+export function overlapCoefficientDistance(set1: Set<number>, set2: Set<number>): number {
     return 1 - intersection(set1, set2).size / Math.min(set1.size, set2.size);
 }
 
