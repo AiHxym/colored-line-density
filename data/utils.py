@@ -6,14 +6,37 @@ import os
 
 
 
-def list_dir(folder_path, sort_seps=None, sort_idxes=None):
+def list_dir(folder_path,  find_type='', preffix='', suffix='', sort_seps=None, sort_idxes=None):
 	"""
 		traverse the folder and returns all contents in order
+		Args:
+			folder_path: the path of the folder
+			find_type: 'folder' or 'file', default is '' which means all
+			preffix: the preffix of the file name, default is '' which means all
+			suffix: the suffix of the file name, default is '' which means all
+			sort_seps: the separators used to split the file name, default is None which means no split
+			sort_idxes: the index of the file name after split, default is None which means no split
+		Returns:
+			contents: the list of contents in order
 	"""
 	contents = os.listdir(folder_path)
 	if '.DS_Store' in contents: contents.remove('.DS_Store')
 	if '._.DS_Store' in contents: contents.remove('._.DS_Store')
-	
+
+	# 按照文件类型过滤
+	if find_type == 'folder':
+		contents = [content for content in contents if os.path.isdir(os.path.join(folder_path, content))]
+	elif find_type == 'file':
+		contents = [content for content in contents if not os.path.isdir(os.path.join(folder_path, content))]
+
+	# 按照前缀名过滤
+	if preffix != '':
+		contents = [content for content in contents if content.startswith(preffix)]
+
+	# 按照后缀名过滤
+	if suffix != '':
+		contents = [content for content in contents if content.endswith(suffix)]
+
 	# 按照文件名中指定位置的数字排序
 	if (sort_seps is not None) and (sort_idxes is not None):
 		assert len(sort_seps) == len(sort_idxes), 'Seps num should equals idx num'

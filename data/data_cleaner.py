@@ -591,4 +591,102 @@ print(data['x'].max(), data['x'].min())
 print(data['y'].max(), data['y'].min())
 
 ########################################################################################
-# %% 10.  ###############################################################
+# %% 10. Flight tracks Northern California TRACON ###############################################################
+
+# structure of the data
+# 1: Track OPNUM (ID of trajectory)
+# 3: start date (MM/DD/YYYY)
+# 4: start time (HH:MM:SS)
+# 5: end time (HH:MM:SS)
+# 20: count of track points
+# 21-: track points (x, y, z, v, time)
+# 	(all points is meters relative to MRP, velocity and time from start of track)
+#	(time is in minutes)
+
+all_data = []
+all_track_ids = []
+conflict_track_ids = []
+
+def deal_one_file(contents):
+	track_points = []
+	track_id = ''
+	start_time = ''
+	# if a line starts with 'Track', it is the start of a new track
+	# if it is already recorded, then it is a conflict track, skip the following lines until the next 'Track'
+	# if it is not recorded, then it is a new track, record the track id and start recording the track points
+	for idx in range(len(contents)):
+		line = contents[idx]
+		if line.startswith('TRACK'):
+			track_id = line.split(' ')[1].strip()
+			start_time = contents[idx+2] + ' ' + contents[idx+3]
+			if track_id in all_track_ids:
+				conflict_track_ids.append(track_id)
+				print('conflict track id: ', track_id)
+				# skip the following lines until the next 'Track'
+				while (idx < len(contents)) and (not contents[idx+1].startswith('TRACK')):
+					idx += 1
+				continue
+		if len(line.split(',')) == 5:
+			x, y, z, v, t = line.split(',')
+			if x == '' or y == '' or t == '': continue
+			track_points.append([track_id, start_time, t, x, y])
+	return track_points
+
+def tranverse_lat_lng(x, y):
+	# MRP (reference point) position in lat, long (SFO airport)
+	mrp_lat = 37.62131
+	mrp_lng = -122.37896
+	# Earth's radius in meters
+	r = 6378137
+	# Conversion factor for meters to degrees
+	deg_per_meter = 1 / (2 * r * np.pi / 360)
+	# Convert x, y to lat, long
+	lat = mrp_lat + y * deg_per_meter
+	lng = mrp_lng + x * deg_per_meter / np.cos(np.radians(mrp_lat))
+	return lng, lat
+
+dir = './10. Flight tracks Northern California TRACON/'
+all_files = []
+for folder in list_dir(dir, find_type='folder'):
+	for file in list_dir(dir + folder):
+		all_files.append(dir + folder + '/' + file)
+
+# 2127 tracks for first day
+# 8179 tracks for first 3 days
+# 18964 tracks for first 5 days
+# 409352 tracks for all days
+all_files = all_files[:3]
+
+for file in tqdm(all_files):
+	with open(file) as f:
+		contents = f.read()
+	contents = contents.split('\n')
+	track_points = deal_one_file(contents)
+	all_data.extend(track_points)
+
+# turn the data into a dataframe
+data = pd.DataFrame(all_data, columns=['lineId', 'start_time', 'time_minute', 'x_meter', 'y_meter'])
+data['x_meter'] = data['x_meter'].astype(float)
+data['y_meter'] = data['y_meter'].astype(float)
+data['time_minute'] = data['time_minute'].astype(float)  # minutes from start of track
+# data['start_date'] = pd.to_datetime(data['start_date'], format='%m/%d/%Y')
+# data['start_time'] = pd.to_datetime(data['start_time'], format='%H:%M:%S')
+data['start_time'] = pd.to_datetime(data['start_time'], format='%m/%d/%Y %H:%M:%S')
+data['time'] = data['start_time'] + pd.to_timedelta(data['time_minute'], unit='m')
+data.drop(['start_time', 'time_minute'], axis=1, inplace=True)
+data['time'] = data['time'].apply(lambda x: x.timestamp())
+
+# tranverse the meters to lat, lng
+data['x'], data['y'] = tranverse_lat_lng(data['x_meter'], data['y_meter'])
+data.drop(['x_meter', 'y_meter'], axis=1, inplace=True)
+
+print('number of tracks: ', len(data['lineId'].unique()))
+print('range of longitude: ', data['x'].min(), data['x'].max())
+print('range of latitude: ', data['y'].min(), data['y'].max())
+
+data = data[['lineId', 'time', 'x', 'y']]
+data.to_csv(results_folder + 'Flight_California_20060101-20060103.csv', index=False)
+# data.to_csv(results_folder + 'Flight_California.csv', index=False)
+
+########################################################################################
+# %%
