@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2023-03-14 13:23:59
+ * @LastEditTime: 2023-03-15 15:22:24
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -119,7 +119,7 @@ export function renderPicked(canvas: HTMLCanvasElement, bins: BinningMap, binDen
         for (let j = 0; j < bins[i].length; j++) {
             const binX = i * binWidth;
             const binY = (bins[i].length - j) * binHeight;
-            let binColor = "white";
+            let binColor = "#FFFFFF00";
             if (hues.length > 0 && hues[Math.floor(i / binSize) * Math.round(bins[i].length / binSize) + Math.floor(j / binSize)] !== undefined && binDensity[i][j] > 0) {
                 //console.log(i, j);
                 binColor = chroma.hcl(hues[Math.floor(i / binSize) * Math.round(bins[i].length / binSize) + Math.floor(j / binSize)],

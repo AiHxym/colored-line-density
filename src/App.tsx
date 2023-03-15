@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-14 23:07:03
+ * @LastEditTime: 2023-03-15 15:37:16
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -553,7 +553,7 @@ function App() {
           <b style={{ color: 'white' }}>Colored Line Density Plot</b>
         </Header>
         <Layout>
-          <Sider width={300} theme="light" className="site-layout-background">
+          <Sider width={300} theme="light" className="site-layout-background" style={{ borderRight: "0.5px solid #ffffff", boxShadow: "darkgrey 0 0 10px 0" }}>
             <Divider>Parameters</Divider>
             <br />
             <Row>
@@ -769,7 +769,7 @@ function App() {
               Download Image
             </Button>
           </Sider>
-          <Content>
+          <Content style={{ backgroundColor: "#FFFFFF" }}>
             <div style={{ height: "20px" }} />
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
               binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
