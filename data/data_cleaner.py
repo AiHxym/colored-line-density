@@ -689,4 +689,60 @@ data.to_csv(results_folder + 'Flight_California_20060101-20060103.csv', index=Fa
 # data.to_csv(results_folder + 'Flight_California.csv', index=False)
 
 ########################################################################################
+# %% 11. AIS Data For ships ###############################################################
+
+# structure of the data
+# MMSI,BaseDateTime,LAT,LON,...
+
+data = pd.read_csv('./11.AIS Data For ships/AIS_2022_03_31.csv',
+					usecols=['MMSI', 'BaseDateTime', 'LAT', 'LON'],)
+data['BaseDateTime'] = pd.to_datetime(data['BaseDateTime'], format='%Y-%m-%dT%H:%M:%S')
+data['time'] = data['BaseDateTime'].apply(lambda x: x.timestamp())
+data = data[['MMSI', 'time', 'LON', 'LAT']]
+data.columns = ['lineId', 'time', 'x', 'y']
+data['lineId'] = data['lineId'].astype(str)
+print(data.shape)	# 7167046
+print(len(data['lineId'].unique())) # 15831
+data = data[data['x'] < -40]
+data = data[data['y'] > 16]
+
+# %% seperate lines if the time gap is larger than 1 hour
+data = data.sort_values(by=['lineId', 'time'])
+data.reset_index(drop=True, inplace=True)
+data['time_gap'] = data.groupby('lineId')['time'].diff()
+data['time_gap'] = data['time_gap'].fillna(0)
+data['too_late'] = data['time_gap'].apply(lambda x: 1 if x > 360 else 0)
+data['lineId2'] = data['lineId'] + '-' + data['too_late'].cumsum().astype(str)
+data.drop(['too_late'], axis=1, inplace=True)
+data = data[['lineId2', 'time', 'x', 'y']]
+data.columns = ['lineId', 'time', 'x', 'y']
+
+# %% seperate lines if the distance gap is larger than 10% of the diagonal of the map
+# diagonal
+diag = np.sqrt((data['x'].max() - data['x'].min())**2 + (data['y'].max() - data['y'].min())**2)
+threshold = diag * 0.1
+data = data.sort_values(by=['lineId', 'time'])
+data.reset_index(drop=True, inplace=True)
+data['x_gap'] = data.groupby('lineId')['x'].diff()
+data['y_gap'] = data.groupby('lineId')['y'].diff()
+data['x_gap'] = data['x_gap'].fillna(0)
+data['y_gap'] = data['y_gap'].fillna(0)
+data['pos_gap'] = np.sqrt(data['x_gap']**2 + data['y_gap']**2)
+data['too_far'] = data['pos_gap'].apply(lambda x: 1 if x > threshold else 0)
+data['lineId2'] = data['lineId'] + '-' + data['too_far'].cumsum().astype(str)
+data.drop(['too_far'], axis=1, inplace=True)
+data = data[['lineId2', 'time', 'x', 'y']]
+data.columns = ['lineId', 'time', 'x', 'y']
+
+#%% save
+data_east = data[data['x'] > -100]	## only east coast
+print(len(data_east['lineId'].unique()))
+data_east.to_csv(results_folder + 'AIS_Ships_20220331_east.csv', index=False)
+
+data_west = data[data['x'] <= -100]	## only west coast + hawaii
+print(len(data_west['lineId'].unique()))
+data_west.to_csv(results_folder + 'AIS_Ships_20220331_west.csv', index=False)
+
+print(len(data['lineId'].unique()))
+data.to_csv(results_folder + 'AIS_Ships_20220331.csv', index=False)
 # %%
