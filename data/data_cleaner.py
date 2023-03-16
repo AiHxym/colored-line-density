@@ -767,6 +767,8 @@ for d in tqdm(datasets):
 	all_data.append(data)
 
 data = pd.concat(all_data, axis=0)
+data.dropna(inplace=True)
+data.drop_duplicates(inplace=True)
 data.reset_index(drop=True, inplace=True)
 
 # only keep the points in the US
@@ -788,4 +790,3 @@ data_sample.reset_index(drop=True, inplace=True)
 print(data_sample.shape)					# (3483903, 4) # sure it is random
 print(len(data_sample['lineId'].unique()))	# 5000
 data_sample.to_csv(results_folder + '12.OpenSky_US_20200525_sample5000.csv', index=False)
-# %%
