@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-15 15:37:16
+ * @LastEditTime: 2023-03-17 21:26:38
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -665,109 +665,140 @@ function App() {
               </Col>
             </Row>
             <Divider>Data Options</Divider>
-            <Upload
-              accept=".csv"
-              showUploadList={false}
-              withCredentials={true}
-              method='post'
-              beforeUpload={file => {
-                papa.parse(file, {
-                  header: true,
-                  dynamicTyping: true,
-                  complete: (results: papa.ParseResult<any>) => {
+            <Row>
+              <Col span={4} />
+              <Col span={16} >
+                <Upload
+                  accept=".csv"
+                  showUploadList={false}
+                  withCredentials={true}
+                  method='post'
+                  beforeUpload={file => {
+                    papa.parse(file, {
+                      header: true,
+                      dynamicTyping: true,
+                      complete: (results: papa.ParseResult<any>) => {
 
-                    function groupBy(xs: any[], key: string) {
-                      return xs.reduce(function (rv, x) {
-                        (rv[x[key]] = rv[x[key]] || []).push(x);
-                        return rv;
-                      }, {});
-                    };
+                        function groupBy(xs: any[], key: string) {
+                          return xs.reduce(function (rv, x) {
+                            (rv[x[key]] = rv[x[key]] || []).push(x);
+                            return rv;
+                          }, {});
+                        };
 
-                    const data = results.data;
-                    const groupedData = groupBy(data, 'lineId');
-                    const lines: { times?: number[]; xValues: number[]; yValues: number[]; }[] = [];
+                        const data = results.data;
+                        const groupedData = groupBy(data, 'lineId');
+                        const lines: { times?: number[]; xValues: number[]; yValues: number[]; }[] = [];
 
-                    let xMin = Infinity;
-                    let xMax = -Infinity;
-                    let yMin = Infinity;
-                    let yMax = -Infinity;
+                        let xMin = Infinity;
+                        let xMax = -Infinity;
+                        let yMin = Infinity;
+                        let yMax = -Infinity;
 
-                    for (let rawLine of Object.values(groupedData) as { lineId: number; time?: string; x: string; y: string }[][]) {
-                      if (rawLine[0].time) {
-                        (rawLine as { lineId: number; time: string; x: string; y: string }[]).sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
-                      } else {
-                        rawLine.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
+                        for (let rawLine of Object.values(groupedData) as { lineId: number; time?: string; x: string; y: string }[][]) {
+                          if (rawLine[0].time) {
+                            (rawLine as { lineId: number; time: string; x: string; y: string }[]).sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
+                          } else {
+                            rawLine.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
+                          }
+
+
+                          if (rawLine[0].time !== undefined) {
+                            const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
+                            for (let i = 0; i < rawLine.length; ++i) {
+                              line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
+                              line.xValues.push(parseFloat(rawLine[i].x));
+                              line.yValues.push(parseFloat(rawLine[i].y));
+                            }
+                            if (line.xValues.length <= 1) continue;
+                            xMin = Math.min(xMin, ...line.xValues);
+                            xMax = Math.max(xMax, ...line.xValues);
+                            yMin = Math.min(yMin, ...line.yValues);
+                            yMax = Math.max(yMax, ...line.yValues);
+                            lines.push(line);
+                          } else {
+                            const line: { xValues: number[], yValues: number[] } = { xValues: [], yValues: [] };
+                            for (let i = 0; i < rawLine.length; ++i) {
+                              line.xValues.push(parseFloat(rawLine[i].x));
+                              line.yValues.push(parseFloat(rawLine[i].y));
+                            }
+                            if (line.xValues.length <= 1) continue;
+                            xMin = Math.min(xMin, ...line.xValues);
+                            xMax = Math.max(xMax, ...line.xValues);
+                            yMin = Math.min(yMin, ...line.yValues);
+                            yMax = Math.max(yMax, ...line.yValues);
+                            lines.push(line);
+                          }
+                        }
+                        console.log(lines);
+
+                        if (lines[lines.length - 1].xValues.length <= 1) {
+                          lines.pop();
+                        }
+
+                        // normalize data
+                        for (let line of lines) {
+                          line.xValues = line.xValues.map(x => (x - xMin) / (xMax - xMin) * canvasWidth);
+                          line.yValues = line.yValues.map(y => (y - yMin) / (yMax - yMin) * canvasHeight);
+                        }
+
+
+                        console.log(lines);
+                        setLines(lines);
+                        setLineSet(new Set(lines.map((line, i) => i)));
                       }
 
+                    });
 
-                      if (rawLine[0].time !== undefined) {
-                        const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
-                        for (let i = 0; i < rawLine.length; ++i) {
-                          line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
-                          line.xValues.push(parseFloat(rawLine[i].x));
-                          line.yValues.push(parseFloat(rawLine[i].y));
-                        }
-                        if (line.xValues.length <= 1) continue;
-                        xMin = Math.min(xMin, ...line.xValues);
-                        xMax = Math.max(xMax, ...line.xValues);
-                        yMin = Math.min(yMin, ...line.yValues);
-                        yMax = Math.max(yMax, ...line.yValues);
-                        lines.push(line);
-                      } else {
-                        const line: { xValues: number[], yValues: number[] } = { xValues: [], yValues: [] };
-                        for (let i = 0; i < rawLine.length; ++i) {
-                          line.xValues.push(parseFloat(rawLine[i].x));
-                          line.yValues.push(parseFloat(rawLine[i].y));
-                        }
-                        if (line.xValues.length <= 1) continue;
-                        xMin = Math.min(xMin, ...line.xValues);
-                        xMax = Math.max(xMax, ...line.xValues);
-                        yMin = Math.min(yMin, ...line.yValues);
-                        yMax = Math.max(yMax, ...line.yValues);
-                        lines.push(line);
-                      }
+                    return false;
+                  }}
+                >
+                  <Button type="default" block icon={<UploadOutlined />}>
+                    Click to Upload
+                  </Button>
+                </Upload>
+              </Col>
+              <Col span={4} />
+            </Row>
+            <br />
+            <Row>
+              <Col span={5} />
+              <Col span={14} >
+                <Button type="default" block icon={<DownloadOutlined />}
+                  onClick={
+                    () => {
+                      const canvas = document.getElementById('diagram') as HTMLCanvasElement;
+                      const img = canvas.toDataURL("image/png");
+                      const link = document.createElement('a');
+                      link.download = 'image.png';
+                      link.href = img;
+                      link.click();
                     }
-                    console.log(lines);
-
-                    if (lines[lines.length - 1].xValues.length <= 1) {
-                      lines.pop();
+                  }>
+                  Download Image
+                </Button>
+              </Col>
+              <Col span={5} />
+            </Row>
+            <Row>
+              <Col span={5} />
+              <Col span={14} >
+                <Button type="default" block icon={<DownloadOutlined />}
+                  onClick={
+                    () => {
+                      const canvas = document.getElementById('cluster-picker') as HTMLCanvasElement;
+                      const img = canvas.toDataURL("image/png");
+                      const link = document.createElement('a');
+                      link.download = 'image.png';
+                      link.href = img;
+                      link.click();
                     }
-
-                    // normalize data
-                    for (let line of lines) {
-                      line.xValues = line.xValues.map(x => (x - xMin) / (xMax - xMin) * canvasWidth);
-                      line.yValues = line.yValues.map(y => (y - yMin) / (yMax - yMin) * canvasHeight);
-                    }
-
-
-                    console.log(lines);
-                    setLines(lines);
-                    setLineSet(new Set(lines.map((line, i) => i)));
-                  }
-
-                });
-
-                return false;
-              }}
-            >
-              <Button type="default" block icon={<UploadOutlined />}>
-                Click to Upload
-              </Button>
-            </Upload>
-
-            <Button type="default" block style={{ width: "55%" }} icon={<DownloadOutlined />}
-              onClick={
-                () => {
-                  const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-                  const img = canvas.toDataURL("image/png");
-                  const link = document.createElement('a');
-                  link.download = 'image.png';
-                  link.href = img;
-                  link.click();
-                }
-              }>
-              Download Image
-            </Button>
+                  }>
+                  Download Picker
+                </Button>
+              </Col>
+              <Col span={5} />
+            </Row>
           </Sider>
           <Content style={{ backgroundColor: "#FFFFFF" }}>
             <div style={{ height: "20px" }} />

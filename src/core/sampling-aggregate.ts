@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-14 23:31:32
+ * @LastEditTime: 2023-03-17 21:32:22
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -227,6 +227,7 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
                 lineSetsForPickedClusters[i].add(lineId);
             }
         }
+        console.log(lineSetsForPickedClusters[i].size);
     }
 
     const binClusterAssignment: number[] = new Array(bins.length * bins[0].length).fill(0);
@@ -234,13 +235,13 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
     for (let i = 0; i < bins.length; i++) {
         for (let j = 0; j < bins[i].length; j++) {
             const bin = bins[i][j];
-            let minDistance = Infinity;
+            let maxSimilarity = -Infinity;
             for (let k = 0; k < lineSetsForPickedClusters.length; k++) {
-                const lineSet = lineSetsForPickedClusters[k];
-                if (overlapCoefficientDistance(bin, lineSet) < minDistance) {
+                const lineSetForPickedCluster = lineSetsForPickedClusters[k];
+                if (intersection(bin, lineSetForPickedCluster).size > maxSimilarity) {
                     binClusterAssignment[i * bins[0].length + j] = pickedClusters[k];
-                    binDensity[i][j] = intersection(bin, lineSet).size;
-                    minDistance = overlapCoefficientDistance(bin, lineSet);
+                    binDensity[i][j] = intersection(bin, lineSetForPickedCluster).size;
+                    maxSimilarity = binDensity[i][j];
                 }
             }
         }

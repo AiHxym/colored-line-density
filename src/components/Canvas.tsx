@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-03-14 13:04:40
+ * @LastEditTime: 2023-03-17 21:04:00
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -59,8 +59,11 @@ export default function Canvas(props: CanvasProps) {
     const prevMinDisplayDensityRef = useRef<number>();
 
     useEffect(() => {
+        const canvas = document.getElementById('cluster-picker') as HTMLCanvasElement;
+        const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+        context.clearRect(0, 0, canvas.width, canvas.height);
         if (props.pickedBinDensity.length > 0 && props.pickedHues.length > 0) {
-            const canvas = document.getElementById('cluster-picker') as HTMLCanvasElement;
+
             renderPicked(canvas, props.binsInfo, props.pickedBinDensity, props.binSize, props.pickedHues);
         }
     }, [props.binSize, props.binsInfo, props.pickedBinDensity, props.pickedHues]);
