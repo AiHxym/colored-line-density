@@ -745,4 +745,48 @@ data_west.to_csv(results_folder + 'AIS_Ships_20220331_west.csv', index=False)
 
 print(len(data['lineId'].unique()))
 data.to_csv(results_folder + 'AIS_Ships_20220331.csv', index=False)
+# %% 12. OpenSky Network Data states ######################################################
+
+# structure of the data
+# time,icao24,lat,lon,velocity,heading,vertrate,callsign,onground,alert,spi,squawk,baroaltitude,geoaltitude,lastposupdate,lastcontact
+
+data_folder = './12.OpenSky_States_20200525/'
+datasets = list_dir(data_folder, find_type='folder')
+all_data = []
+for d in tqdm(datasets):
+	data_file = data_folder + d + '/' + d + '.csv'
+	data = pd.read_csv(data_file, usecols=['time','icao24','lat','lon','callsign'])
+	data.dropna(inplace=True)
+	data.drop_duplicates(inplace=True)
+	data.reset_index(drop=True, inplace=True)
+	data['lineId'] = data['icao24'].astype(str)
+	data['time'] = pd.to_datetime(data['time'], unit='s')
+	data['time'] = data['time'].apply(lambda x: x.timestamp())
+	data = data[['lineId', 'time', 'lon', 'lat']]
+	data.columns = ['lineId', 'time', 'x', 'y']
+	all_data.append(data)
+
+data = pd.concat(all_data, axis=0)
+data.dropna(inplace=True)
+data.drop_duplicates(inplace=True)
+data.reset_index(drop=True, inplace=True)
+
+# only keep the points in the US
+data = data[data['x'] < -40]
+data = data[data['x'] > -130]
+data = data[data['y'] > 16]
+data = data[data['y'] < 60]
+
+print(data.shape)						# (9114409, 4)
+print(len(data['lineId'].unique()))		# 12907
+data.to_csv(results_folder + '12.OpenSky_US_20200525.csv', index=False)
+
 # %%
+# random sample 5000 lines
+lineIds = data['lineId'].unique()
+lineIds = np.random.choice(lineIds, 5000, replace=False)
+data_sample = data[data['lineId'].isin(lineIds)]
+data_sample.reset_index(drop=True, inplace=True)
+print(data_sample.shape)					# (3483903, 4) # sure it is random
+print(len(data_sample['lineId'].unique()))	# 5000
+data_sample.to_csv(results_folder + '12.OpenSky_US_20200525_sample5000.csv', index=False)
