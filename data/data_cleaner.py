@@ -496,7 +496,7 @@ data_cleaned = data[data['lineId'].isin(lines)]
 data_cleaned.to_csv(results_folder + 'MarineCadastre_%s_de_late_10k.csv'%(dataset), index=False)
 
 # %% 7. Hellenic Trench AIS data ################################################
-data = pd.read_csv('./Hellenic Trench AIS data/all_ais.csv')
+data = pd.read_csv('./7.Hellenic Trench AIS data/all_ais.csv')
 data = data[['MMSI', ' TIMESTAMP_UTC', ' LON', ' LAT']]
 data.columns = ['lineId', 'time', 'x', 'y']
 
@@ -504,25 +504,72 @@ data['lineId'] = data['lineId'].astype(str)
 data['time'] = pd.to_datetime(data['time'])
 data['time'] = data['time'].apply(lambda x: x.timestamp())
 data = data.sort_values(by=['lineId', 'time'])
+print(len(data['lineId'].unique()))	# 18276
 
 # remove the data with the same timestamp
 data.drop_duplicates(inplace=True)
 data.reset_index(drop=True, inplace=True)
+print(len(data['lineId'].unique()))	# 18276
 
-# seperate the line if the time gap is larger than 1 hour
+#%% seperate the line if the time gap is larger than 1 hour
 data['time_gap'] = data.groupby('lineId')['time'].diff()
 data['time_gap'] = data['time_gap'].fillna(0)
 data['too_late'] = data['time_gap'].apply(lambda x: 1 if x > 3600 else 0)
 data['lineId2'] = data['lineId'] + '-' + data['too_late'].cumsum().astype(str)
-
 data = data[['lineId2', 'time', 'x', 'y']]
 data.columns = ['lineId', 'time', 'x', 'y']
+print(len(data['lineId'].unique()))	# 420455
 
-# randomly sample 10,000 lines
+#%% only reserve the lines across the crowded area (Hellenic Trench)
+all_lines = data['lineId'].unique()
+reserve_lines = []
+for line in all_lines:
+	line_data = data[data['lineId'] == line]
+	for point in line_data.to_dict('records'):
+		if point['x'] > 20 and point['x'] < 25.5 and \
+			point['y'] > 36:
+			reserve_lines.append(line)
+			break
+data = data[data['lineId'].isin(reserve_lines)]
+data.reset_index(drop=True, inplace=True)
+print(len(data['lineId'].unique()))	# 
+
+#%% remove some lines
+# diagonal distance
+x_range = data['x'].max() - data['x'].min()
+y_range = data['y'].max() - data['y'].min()
+diagonal = np.sqrt(x_range ** 2 + y_range ** 2)
+all_lines = data['lineId'].unique()
+abandon_lines = []
+for line in tqdm(all_lines):
+	line_data = data[data['lineId'] == line]
+	# remove the line if the number of points is less than 10
+	if len(line_data) < 10:
+		abandon_lines.append(line)
+		continue
+	# remove the line if start-end distance is less than 10% of the diagonal
+	x_dis = line_data['x'].iloc[-1] - line_data['x'].iloc[0]
+	y_dis = line_data['y'].iloc[-1] - line_data['y'].iloc[0]
+	dis = np.sqrt(x_dis ** 2 + y_dis ** 2)
+	if dis < diagonal * 0.1:
+		abandon_lines.append(line)
+		continue
+	# remove the line going through the selected corner area
+	for point in line_data.to_dict('records'):
+		if point['y'] < 34.5 or (point['x']<19 and point['y']>38 and point['y']<38.7):
+			abandon_lines.append(line)
+			break
+data = data[~data['lineId'].isin(abandon_lines)]
+data.reset_index(drop=True, inplace=True)
+print(len(data['lineId'].unique()))	# 
+
+#%% randomly sample 10,000 lines
 lines = data['lineId'].unique()
 lines = np.random.choice(lines, 10000, replace=False)
 data_cleaned = data[data['lineId'].isin(lines)]
-data_cleaned.to_csv(results_folder + 'HellenicTrench_10k.csv', index=False)
+data_cleaned.to_csv(results_folder + 'HellenicTrench_cleaned_10k.csv', index=False)
+
+
 # %% 8. Mediterrannean Sea Trajectory data ######################################
 	
 # Strucutre

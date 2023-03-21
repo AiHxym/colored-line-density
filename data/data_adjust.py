@@ -109,4 +109,52 @@ print(df['x'].min(), df['x'].max())
 print(df['y'].min(), df['y'].max())
 # lng 17.004000000000076 34.09868000000006
 # lat -97.94371999999998 -83.99999999999994
+# %% 7.HellenicTrench ######################################################
+
+# %% clean 1
+# remove the line if no point in the crowded area
+data = pd.read_csv(results_folder + '7.HellenicTrench_10k.csv')
+all_lines = data['lineId'].unique()
+reserve_lines = []
+for line in all_lines:
+	line_data = data[data['lineId'] == line]
+	for point in line_data.to_dict('records'):
+		if point['x'] > 20 and point['x'] < 25.5 and \
+			point['y'] > 36:
+			reserve_lines.append(line)
+			break
+
+data = data[data['lineId'].isin(reserve_lines)]
+data.reset_index(drop=True, inplace=True)
+data.to_csv(results_folder + '7.HellenicTrench_10k_cleaned.csv', index=False)
+# %% clean 2
+data = pd.read_csv(results_folder + '7.HellenicTrench_10k_cleaned.csv')
+all_lines = data['lineId'].unique()
+abandon_lines = []
+x_range = data['x'].max() - data['x'].min()
+y_range = data['y'].max() - data['y'].min()
+diagonal = np.sqrt(x_range ** 2 + y_range ** 2)
+	
+for line in all_lines:
+	line_data = data[data['lineId'] == line]
+	# remove the line if the number of points is less than 10
+	if len(line_data) < 10:
+		abandon_lines.append(line)
+		continue
+	# remove the line if start-end distance is less than 10% of the diagonal
+	x_dis = line_data['x'].iloc[-1] - line_data['x'].iloc[0]
+	y_dis = line_data['y'].iloc[-1] - line_data['y'].iloc[0]
+	dis = np.sqrt(x_dis ** 2 + y_dis ** 2)
+	if dis < diagonal * 0.1:
+		abandon_lines.append(line)
+		continue
+	# remove the line going through the selected corner area
+	for point in line_data.to_dict('records'):
+		if point['y'] < 34.5 or (point['x']<19 and point['y']>38 and point['y']<38.7):
+			abandon_lines.append(line)
+			break
+
+data = data[~data['lineId'].isin(abandon_lines)]
+data.reset_index(drop=True, inplace=True)
+data.to_csv(results_folder + '7.HellenicTrench_10k_cleaned_2.csv', index=False)
 # %%

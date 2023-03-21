@@ -101,18 +101,48 @@
 				// style: 'mapbox://styles/mapbox/streets-v12',
 			})
 
-			// Add a botton to remove text labels from all layers
-			const button_text_remove = document.createElement('button')
-			button_text_remove.textContent = 'Remove Labels'
-			button_text_remove.addEventListener('click', function () {
+			// Add a botton to recover the map
+			const button_map_recover = document.createElement('button')
+			button_map_recover.textContent = 'Recover Map'
+			button_map_recover.addEventListener('click', function () {
 				map.getStyle().layers.forEach(function (layer) {
 					if (layer.type === 'symbol' && layer.layout['text-field']) {
-						map.setLayoutProperty(layer.id, 'text-field', ['format', ['get', 'name_en'], { 'font-scale': 0.01 }])
+						map.setLayoutProperty(layer.id, 'text-field', ['get', 'name_en'])
+					}
+					if (layer.type === 'background') {
+						map.setLayoutProperty(layer.id, 'visibility', 'visible')
+					}
+					if (layer.type === 'fill') {
+						map.setLayoutProperty(layer.id, 'visibility', 'visible')
+					}
+					if (layer.type === 'line') {
+						map.setLayoutProperty(layer.id, 'visibility', 'visible')
 					}
 				})
 			})
-			document.body.appendChild(button_text_remove)
-
+			
+			// Add a botton to hide the map, only show the text labels
+			const button_map_remove = document.createElement('button')
+			button_map_remove.textContent = 'Remove Map'
+			button_map_remove.addEventListener('click', function () {
+				map.getStyle().layers.forEach(function (layer) {
+					if (layer.type === 'symbol' && layer.layout['text-field']) {
+						map.setLayoutProperty(layer.id, 'text-field', ['get', 'name_en'])
+						// map.setLayoutProperty(layer.id, 'text-field', ['format', ['get', 'name_en'], { 'font-scale': 0.01 }])
+					}
+					if (layer.type === 'background') {
+						map.setLayoutProperty(layer.id, 'visibility', 'none')
+					}
+					if (layer.type === 'fill') {
+						map.setLayoutProperty(layer.id, 'visibility', 'none')
+					}
+					if (layer.type === 'line') {
+						map.setLayoutProperty(layer.id, 'visibility', 'none')
+					}
+				})
+			})
+			document.body.appendChild(button_map_remove)
+			
 			// Add a botton to recover text labels from all layers
 			const button_text_recover = document.createElement('button')
 			button_text_recover.textContent = 'Recover Labels'
@@ -124,6 +154,18 @@
 				})
 			})
 			document.body.appendChild(button_text_recover)
+			
+			// Add a botton to remove text labels from all layers
+			const button_text_remove = document.createElement('button')
+			button_text_remove.textContent = 'Remove Labels'
+			button_text_remove.addEventListener('click', function () {
+				map.getStyle().layers.forEach(function (layer) {
+					if (layer.type === 'symbol' && layer.layout['text-field']) {
+						map.setLayoutProperty(layer.id, 'text-field', ['format', ['get', 'name_en'], { 'font-scale': 0.01 }])
+					}
+				})
+			})
+			document.body.appendChild(button_text_remove)
 			
 			// Add a botton to draw dash and gray boundary lines to the map
 			const button_boundary = document.createElement('button')
@@ -174,7 +216,7 @@
 				map.removeSource('boundary')
 			})
 			document.body.appendChild(button_boundary_remove)
-
+		
 			// not work: adjust coastlines and cities styles
 			/*
 			map.on('load', function () {
