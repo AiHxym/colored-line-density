@@ -511,7 +511,8 @@ data.drop_duplicates(inplace=True)
 data.reset_index(drop=True, inplace=True)
 print(len(data['lineId'].unique()))	# 18276
 
-#%% seperate the line if the time gap is larger than 1 hour
+#% seperate the line if the time gap is larger than 1 hour
+##### if run this here, the later will be super slow
 data['time_gap'] = data.groupby('lineId')['time'].diff()
 data['time_gap'] = data['time_gap'].fillna(0)
 data['too_late'] = data['time_gap'].apply(lambda x: 1 if x > 3600 else 0)
@@ -520,48 +521,44 @@ data = data[['lineId2', 'time', 'x', 'y']]
 data.columns = ['lineId', 'time', 'x', 'y']
 print(len(data['lineId'].unique()))	# 420455
 
-#%% only reserve the lines across the crowded area (Hellenic Trench)
+#% only reserve the lines across the crowded area (Hellenic Trench)
 all_lines = data['lineId'].unique()
-reserve_lines = []
-for line in all_lines:
-	line_data = data[data['lineId'] == line]
-	for point in line_data.to_dict('records'):
-		if point['x'] > 20 and point['x'] < 25.5 and \
-			point['y'] > 36:
-			reserve_lines.append(line)
-			break
+filtered_data = data[(data['x'] > 20) & (data['x'] < 25.5) & (data['y'] > 36)]
+reserve_lines = filtered_data['lineId'].unique()
 data = data[data['lineId'].isin(reserve_lines)]
 data.reset_index(drop=True, inplace=True)
-print(len(data['lineId'].unique()))	# 
+print(len(data['lineId'].unique()))	# 13952 or 303094
 
 #%% remove some lines
+# remove the line if the number of points is less than 10
+lineId_count = data.groupby('lineId').count()['time']
+abandon_lines = lineId_count[lineId_count < 10].index
+data = data[~data['lineId'].isin(abandon_lines)]
+print(len(data['lineId'].unique()))	# 190535
+
+#%% remove the line if start-end distance is less than 10% of the diagonal
 # diagonal distance
 x_range = data['x'].max() - data['x'].min()
 y_range = data['y'].max() - data['y'].min()
 diagonal = np.sqrt(x_range ** 2 + y_range ** 2)
-all_lines = data['lineId'].unique()
-abandon_lines = []
-for line in tqdm(all_lines):
-	line_data = data[data['lineId'] == line]
-	# remove the line if the number of points is less than 10
-	if len(line_data) < 10:
-		abandon_lines.append(line)
-		continue
-	# remove the line if start-end distance is less than 10% of the diagonal
-	x_dis = line_data['x'].iloc[-1] - line_data['x'].iloc[0]
-	y_dis = line_data['y'].iloc[-1] - line_data['y'].iloc[0]
-	dis = np.sqrt(x_dis ** 2 + y_dis ** 2)
-	if dis < diagonal * 0.1:
-		abandon_lines.append(line)
-		continue
-	# remove the line going through the selected corner area
-	for point in line_data.to_dict('records'):
-		if point['y'] < 34.5 or (point['x']<19 and point['y']>38 and point['y']<38.7):
-			abandon_lines.append(line)
-			break
+threshold = 0.1 * diagonal
+lineId = data['lineId'].unique()
+all_first_x = data.groupby('lineId').first()['x']
+all_first_y = data.groupby('lineId').first()['y']
+all_last_x = data.groupby('lineId').last()['x']
+all_last_y = data.groupby('lineId').last()['y']
+all_diag = np.sqrt((all_first_x - all_last_x) ** 2 + (all_first_y - all_last_y) ** 2)
+abandon_lines = all_diag[all_diag < threshold].index
 data = data[~data['lineId'].isin(abandon_lines)]
 data.reset_index(drop=True, inplace=True)
-print(len(data['lineId'].unique()))	# 
+print(len(data['lineId'].unique()))	# 59250
+
+#%% remove the line going through the selected corner area
+filtered_data = data[(data['y'] < 34.5) | ( (data['x'] < 19) & (data['y'] > 38) & (data['y'] < 38.7) )]
+abandon_lines = filtered_data['lineId'].unique()
+data = data[~data['lineId'].isin(abandon_lines)]
+data.reset_index(drop=True, inplace=True)
+print(len(data['lineId'].unique()))	# 57896
 
 #%% randomly sample 10,000 lines
 lines = data['lineId'].unique()
@@ -569,6 +566,11 @@ lines = np.random.choice(lines, 10000, replace=False)
 data_cleaned = data[data['lineId'].isin(lines)]
 data_cleaned.to_csv(results_folder + 'HellenicTrench_cleaned_10k.csv', index=False)
 
+#%% randomly sample 5,000 lines
+lines = data['lineId'].unique()
+lines = np.random.choice(lines, 5000, replace=False)
+data_cleaned = data[data['lineId'].isin(lines)]
+data_cleaned.to_csv(results_folder + 'HellenicTrench_cleaned_5k.csv', index=False)
 
 # %% 8. Mediterrannean Sea Trajectory data ######################################
 	
