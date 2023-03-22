@@ -504,12 +504,11 @@ data['lineId'] = data['lineId'].astype(str)
 data['time'] = pd.to_datetime(data['time'])
 data['time'] = data['time'].apply(lambda x: x.timestamp())
 data = data.sort_values(by=['lineId', 'time'])
-print(len(data['lineId'].unique()))	# 18276
-
-# remove the data with the same timestamp
-data.drop_duplicates(inplace=True)
+data.drop_duplicates(inplace=True)	# remove the data with the same timestamp
 data.reset_index(drop=True, inplace=True)
-print(len(data['lineId'].unique()))	# 18276
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step1_%d.csv' % num_lines, index=False)
+print(num_lines)	# 18276
 
 #% seperate the line if the time gap is larger than 1 hour
 ##### if run this here, the later will be super slow
@@ -519,7 +518,28 @@ data['too_late'] = data['time_gap'].apply(lambda x: 1 if x > 3600 else 0)
 data['lineId2'] = data['lineId'] + '-' + data['too_late'].cumsum().astype(str)
 data = data[['lineId2', 'time', 'x', 'y']]
 data.columns = ['lineId', 'time', 'x', 'y']
-print(len(data['lineId'].unique()))	# 420455
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step2_%d.csv' % num_lines, index=False)
+print(num_lines)	# 420455
+
+#% seperate the line if the position gap is larger than 20% of the diagonal
+x_range = data['x'].max() - data['x'].min()
+y_range = data['y'].max() - data['y'].min()
+diag = np.sqrt(x_range**2 + y_range**2)
+threshold = diag * 0.2
+data.reset_index(drop=True, inplace=True)
+data['x_gap'] = data.groupby('lineId')['x'].diff()
+data['x_gap'] = data['x_gap'].fillna(0)
+data['y_gap'] = data.groupby('lineId')['y'].diff()
+data['y_gap'] = data['y_gap'].fillna(0)
+data['pos_gap'] = np.sqrt(data['x_gap']**2 + data['y_gap']**2)
+data['too_far'] = data['pos_gap'].apply(lambda x: 1 if x > threshold else 0)
+data['lineId2'] = data['lineId'] + '-' + data['too_far'].cumsum().astype(str)
+data = data[['lineId2', 'time', 'x', 'y']]
+data.columns = ['lineId', 'time', 'x', 'y']
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step3_%d.csv' % num_lines, index=False)
+print(num_lines)	# 421894
 
 #% only reserve the lines across the crowded area (Hellenic Trench)
 all_lines = data['lineId'].unique()
@@ -527,16 +547,20 @@ filtered_data = data[(data['x'] > 20) & (data['x'] < 25.5) & (data['y'] > 36)]
 reserve_lines = filtered_data['lineId'].unique()
 data = data[data['lineId'].isin(reserve_lines)]
 data.reset_index(drop=True, inplace=True)
-print(len(data['lineId'].unique()))	# 13952 or 303094
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step4_%d.csv' % num_lines, index=False)
+print(num_lines)	# 303869
 
-#%% remove some lines
+#% remove some lines
 # remove the line if the number of points is less than 10
 lineId_count = data.groupby('lineId').count()['time']
 abandon_lines = lineId_count[lineId_count < 10].index
 data = data[~data['lineId'].isin(abandon_lines)]
-print(len(data['lineId'].unique()))	# 190535
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step5_%d.csv' % num_lines, index=False)
+print(num_lines)	# 190582
 
-#%% remove the line if start-end distance is less than 10% of the diagonal
+#% remove the line if start-end distance is less than 10% of the diagonal
 # diagonal distance
 x_range = data['x'].max() - data['x'].min()
 y_range = data['y'].max() - data['y'].min()
@@ -551,26 +575,39 @@ all_diag = np.sqrt((all_first_x - all_last_x) ** 2 + (all_first_y - all_last_y) 
 abandon_lines = all_diag[all_diag < threshold].index
 data = data[~data['lineId'].isin(abandon_lines)]
 data.reset_index(drop=True, inplace=True)
-print(len(data['lineId'].unique()))	# 59250
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step6_%d.csv' % num_lines, index=False)
+print(num_lines)	# 59244
 
-#%% remove the line going through the selected corner area
+#% remove the line going through the selected corner area
 filtered_data = data[(data['y'] < 34.5) | ( (data['x'] < 19) & (data['y'] > 38) & (data['y'] < 38.7) )]
 abandon_lines = filtered_data['lineId'].unique()
 data = data[~data['lineId'].isin(abandon_lines)]
 data.reset_index(drop=True, inplace=True)
-print(len(data['lineId'].unique()))	# 57896
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step7_%d.csv' % num_lines, index=False)
+print(num_lines)	# 57892
 
-#%% randomly sample 10,000 lines
+#%% remove the line going through the selected land area
+filtered_data = data[(data['x'] > 36.9) & (data['x'] < 37.1) & (data['y'] > 22.3) & (data['y'] < 22.8) ]
+abandon_lines = filtered_data['lineId'].unique()
+data = data[~data['lineId'].isin(abandon_lines)]
+data.reset_index(drop=True, inplace=True)
+num_lines = len(data['lineId'].unique())
+data.to_csv(results_folder + '7.HellenicTrench_step8_%d.csv' % num_lines, index=False)
+print(num_lines)	# 57892
+
+#% randomly sample 10,000 lines
 lines = data['lineId'].unique()
 lines = np.random.choice(lines, 10000, replace=False)
 data_cleaned = data[data['lineId'].isin(lines)]
-data_cleaned.to_csv(results_folder + 'HellenicTrench_cleaned_10k.csv', index=False)
+data_cleaned.to_csv(results_folder + '7.HellenicTrench_cleaned_10k.csv', index=False)
 
-#%% randomly sample 5,000 lines
+#% randomly sample 5,000 lines
 lines = data['lineId'].unique()
 lines = np.random.choice(lines, 5000, replace=False)
 data_cleaned = data[data['lineId'].isin(lines)]
-data_cleaned.to_csv(results_folder + 'HellenicTrench_cleaned_5k.csv', index=False)
+data_cleaned.to_csv(results_folder + '7.HellenicTrench_cleaned_5k.csv', index=False)
 
 # %% 8. Mediterrannean Sea Trajectory data ######################################
 	
