@@ -106,14 +106,10 @@
 				map.setPaintProperty('water', 'fill-color', '#FFFFFF')
 				// Change land color to #7C7D7E
 				map.setPaintProperty('landcover', 'fill-color', '#000000')
-				// map.setPaintProperty('land-structure-line', 'fill-color', '#000000')
-				// map.setPaintProperty('land-structure-polygon', 'fill-color', '#000000')
-				// map.setPaintProperty('Greenspace', 'fill-color', '#7C7D7E')
-				// map.setPaintProperty('background', 'fill-color', '#7C7D7E')
-				map.getStyle().layers.forEach(function (layer) {
-					console.log(layer.id)
-					// console.log(layer.type)
-				})
+				// map.getStyle().layers.forEach(function (layer) {
+				// 	console.log(layer.id)
+				// 	// console.log(layer.type)
+				// })
 			})
 
 			// Add a botton to recover the map
@@ -252,6 +248,7 @@
 				console.log("Height: ", height);
 			})
 			document.body.appendChild(button_boundary_size)
+			
 			// button_boundary.addEventListener('click', function () {
 			// 	const boundary = map.getSource('boundary')._data.features[0].geometry.coordinates
 			// 	const pixel = map.project(boundary[1])
@@ -324,8 +321,44 @@
 				})
 				map.addControl(mapboxExportControl, 'top-right')
 			})
-		}
 
+			// Add a botton to save the map within the boundary area as png file
+			// doesn't work, download a blank png file
+			map.once('idle', function() {
+				const button_save = document.createElement('button')
+				button_save.textContent = 'Save Map'
+				button_save.addEventListener('click', function () {
+					const bounds = [[LAT[0], LNG[0]],
+									[LAT[1], LNG[1]]];
+					const nw = map.project(bounds[0]);
+					const se = map.project(bounds[1]);
+					const width = Math.abs(se.x - nw.x);
+					const height = Math.abs(se.y - nw.y);
+					console.log(`width: ${width}, height: ${height}`);
+
+					// Create a new canvas element
+					const canvas = document.createElement('canvas');
+					canvas.width = width;
+					canvas.height = height;
+
+					// Draw the map image into the canvas
+					const ctx = canvas.getContext('2d');
+					console.log(`nw.x: ${nw.x}, nw.y: ${nw.y}, map.getCanvas().width: ${map.getCanvas().width}, map.getCanvas().height: ${map.getCanvas().height}`);
+					ctx.drawImage(map.getCanvas(), nw.x, nw.y, width, height, 0, 0, width, height);
+
+					// Convert the canvas to a data URL in PNG format
+					const dataURL = canvas.toDataURL('image/png');
+
+					// Create a temporary link element
+					const link = document.createElement('a');
+					link.href = dataURL;
+					link.download = 'map.png';
+					link.click();
+				})
+				// document.body.appendChild(button_save)
+			});
+		}
+			
 	</script>
 </body>
 </html>
