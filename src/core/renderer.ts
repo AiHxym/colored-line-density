@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2023-03-16 17:47:54
+ * @LastEditTime: 2023-03-25 20:06:12
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -67,12 +67,12 @@ export function renderPlus(densityValue: number, bins: BinningMap, binDensity: {
             const [i, j] = flattenBin[0];
             const binX = i * binWidth;
             const binY = (bins[i].length - j) * binHeight;
-            let binColor = chroma.hcl(45, Math.pow(0.3 + (1.2 - 0.3) * binDensityValue, 1.3) * 100, Math.pow(0.95 - (0.95 - 0.2) * binDensityValue, 1.5) * 100).hex();
+            let binColor = chroma.hcl(45, Math.pow(0.3 + (1.2 - 0.3) * binDensityValue, 1) * 100, Math.pow(0.95 - (0.95 - 0.2) * binDensityValue, 1.5) * 100).hex();
             if (hues.length > 0 && hues[Math.floor(i / binSize) * Math.round(bins[i].length / binSize) + Math.floor(j / binSize)] !== undefined) {
                 //console.log(i, j);
                 binColor = chroma.hcl(hues[Math.floor(i / binSize) * Math.round(bins[i].length / binSize) + Math.floor(j / binSize)],
                     Math.pow(minChroma + (maxChroma - minChroma) * binDensityValue, 1) * 100,
-                    Math.pow(maxLuminance - (maxLuminance - minLuminance) * binDensityValue, 1) * 100).hex();
+                    Math.pow(maxLuminance - (maxLuminance - minLuminance) * binDensityValue, 1.5) * 100).hex();
             }
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);

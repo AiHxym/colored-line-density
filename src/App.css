@@ -58,3 +58,7 @@
   /* background-color: rgb(0, 0, 0);
   border-color: rgb(0, 0, 0); */
 }
+
+.ant-upload {
+  width: 100%;
+}

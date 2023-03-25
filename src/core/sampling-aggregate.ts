@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-17 21:32:22
+ * @LastEditTime: 2023-03-25 18:41:58
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -87,6 +87,21 @@ export function clusterDivision(hc: Hierarchical, divideNodeId: number, lineSet:
             hc.nodes.splice(i, 1);
             break;
         }
+    }
+}
+
+export function clusterDivisionByClusterNum(hc: Hierarchical, clusterNum: number, lineSet: Set<number>) {
+    for (let i = 1; i < clusterNum; i++) {
+        let maxDistance = 0;
+        let divideNodeId = -1;
+        for (let j = 0; j < hc.nodes.length; j++) {
+            const node = hc.nodes[j];
+            if (node.distance > maxDistance) {
+                maxDistance = node.distance;
+                divideNodeId = node.id;
+            }
+        }
+        clusterDivision(hc, divideNodeId, lineSet);
     }
 }
 
@@ -176,7 +191,7 @@ export function getHues(bins: Set<number>[][], hc: Hierarchical, previosHues: nu
     return [hueOfModelCentroids, binClusterAssignment];
 }
 
-export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: Hierarchical, lineSet: Set<number>, pickedClusters: number[]): [number[][], number[]] {
+export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: Hierarchical, lineSet: Set<number>, pickedClusters: number[]): [number[][], number[], Set<number>[]] {
     const binDensity: number[][] = new Array(bins.length).fill(0).map(v => new Array(bins[0].length).fill(0));
     const lineImportancesDict: { [key: number]: number[] } = {}; // lineId -> importance array of all cluster
     const lineAppearancesDict: { [key: number]: number[] } = {}; // lineId -> appearance count of all cluster
@@ -195,13 +210,13 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
         }
     }
 
-    for (let lineId of lineSet) {
-        const lineImportances = lineImportancesDict[lineId];
-        const lineAppearances = lineAppearancesDict[lineId];
-        for (let i = 0; i < lineImportances.length; i++) {
-            //lineImportances[i] = lineImportances[i] / lineAppearances[i];
-        }
-    }
+    // for (let lineId of lineSet) {
+    //     const lineImportances = lineImportancesDict[lineId];
+    //     const lineAppearances = lineAppearancesDict[lineId];
+    //     for (let i = 0; i < lineImportances.length; i++) {
+    //         //lineImportances[i] = lineImportances[i] / lineAppearances[i];
+    //     }
+    // }
 
     const lineAllocations: { [key: number]: number } = {}; // lineId -> cluster allocation
 
@@ -218,6 +233,7 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
         lineAllocations[lineId] = maxImportanceCluster;
     }
     //console.log(lineAllocations);
+
 
     const lineSetsForPickedClusters = new Array(pickedClusters.length).fill(0).map(v => new Set<number>());
     for (let i = 0; i < pickedClusters.length; i++) {
@@ -294,5 +310,5 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
     //     }
     // }
 
-    return [binDensity, binClusterAssignment];
+    return [binDensity, binClusterAssignment, lineSetsForPickedClusters];
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-03-17 21:04:00
+ * @LastEditTime: 2023-03-25 20:02:02
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -87,13 +87,21 @@ export default function Canvas(props: CanvasProps) {
             console.log(props.minDisplayDensity);
             console.log(prevMinDisplayDensityRef.current);
             if (prevMinDisplayDensityRef.current !== undefined) {
+                const startDensity = prevMinDisplayDensityRef.current as number;
+                const endDensity = props.minDisplayDensity;
                 if (props.minDisplayDensity - prevMinDisplayDensityRef.current > 0) {
                     setTimeout(() => {
-                        renderMinus(prevMinDisplayDensityRef.current as number, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                        // console.log(prevMinDisplayDensityRef.current as number)
+                        // console.log(props.minDisplayDensity)
+                        for (let i = startDensity; i < endDensity; ++i) {
+                            renderMinus(i, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                        }
                     }, 0);
                 } else if (props.minDisplayDensity - prevMinDisplayDensityRef.current < 0) {
                     setTimeout(() => {
-                        renderPlus(props.minDisplayDensity, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                        for (let i = startDensity - 1; i >= endDensity; --i) {
+                            renderPlus(i, props.binsInfo, props.binDensity, canvas, props.binSize, d3.interpolateMagma, props.hues);
+                        }
                     }, 0);
                 }
 

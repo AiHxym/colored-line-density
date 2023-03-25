@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-17 21:26:38
+ * @LastEditTime: 2023-03-25 19:31:24
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -20,7 +20,7 @@ import * as d3 from 'd3';
 
 import './App.css';
 import { BinningMap, binning } from './core/binning';
-import { samplingAggregate, clusterDivision, getNearestClusterNodeId, getHues, getHuesAndDensitiesForClusterPicker } from './core/sampling-aggregate'
+import { samplingAggregate, clusterDivision, clusterDivisionByClusterNum, getNearestClusterNodeId, getHues, getHuesAndDensitiesForClusterPicker } from './core/sampling-aggregate'
 import { Hierarchical } from './core/hierarchical-clustering'
 
 const { Header, Footer, Sider, Content } = Layout;
@@ -115,6 +115,31 @@ function argMax(arr: number[]) {
   return maxIndex;
 }
 
+function downloadCSV(lines: { lineId: number, times?: number[], xValues: number[], yValues: number[] }[]) {
+
+  const dataArrary: { lineId: number, time?: number, x: number, y: number }[] = [];
+  lines.forEach((line, i) => {
+    if (line.times) {
+      line.times.forEach((time, j) => {
+        dataArrary.push({ lineId: line.lineId, time, x: line.xValues[j], y: line.yValues[j] });
+      })
+    } else {
+      line.xValues.forEach((x, j) => {
+        dataArrary.push({ lineId: line.lineId, x, y: line.yValues[j] });
+      })
+    }
+  });
+  const csv = papa.unparse(dataArrary);
+
+  const csvData = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const csvURL = window.URL.createObjectURL(csvData);
+
+  const tempLink = document.createElement('a');
+  tempLink.href = csvURL;
+  tempLink.setAttribute('download', 'download.csv');
+  tempLink.click();
+}
+
 
 function App() {
   const [lines, setLines] = useState<{ times?: number[], xValues: number[], yValues: number[] }[]>([]);
@@ -129,7 +154,7 @@ function App() {
   const [hueTemplateRotation, setHueTemplateRotation] = useState<number>(0);
   const [hueTemplateDomain, setHueTemplateDomain] = useState<number[]>(Array.from(Array(360), (_, i) => i));
   const [clusterOptions, setClusterOptions] = useState<(string | number | CheckboxOptionType)[]>([]);
-  const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
+  //const [ifShowedCluster, setIfShowedCluster] = useState<boolean[]>([]);
   const [ifFixClusterColor, setIfFixClusterColor] = useState<boolean[]>([]);
   const [checkboxState, setCheckboxState] = useState<CheckboxValueType[]>([]);
   const [clusterPickerCheckboxState, setClusterPickerCheckboxState] = useState<CheckboxValueType[]>([]);
@@ -144,6 +169,8 @@ function App() {
   const [sampledBinNum, setSampledBinNum] = useState<number>(0);
   const [pickedBinDensity, setPickedBinDensity] = useState<number[][]>([]);
   const [pickedHues, setPickedHues] = useState<number[]>([]);
+  const [initClusterNum, setInitClusterNum] = useState<number>(0);
+  const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<Set<number>[]>([]);
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
     console.log(clusterPickerCheckboxState);
@@ -577,6 +604,22 @@ function App() {
             </Row>
             <br />
             <Row>
+              <Col span={12} className="item-text">Initial Cluster Number:</Col>
+              <Col span={12}>
+                <InputNumber style={{ width: 100 }} min={0} max={20} defaultValue={1} step={1}
+                  onChange={(value) => {
+                    setInitClusterNum(value as number);
+                    clusterDivisionByClusterNum(hc as Hierarchical, value as number, lineSet);
+                    const newIfFixClusterColor = Array(value as number).fill(false);
+                    const [newHueCenters, newBinClusterAssignment] = getHues(binsInfo, hc as Hierarchical, [], newIfFixClusterColor);
+                    setHueCenters(newHueCenters);
+                    setBinClusterAssignment(newBinClusterAssignment);
+                    setIfFixClusterColor(newIfFixClusterColor);
+                  }} />
+              </Col>
+            </Row>
+            <br />
+            <Row>
               <Col span={12} className="item-text">Sampling Rate:</Col>
               <Col span={12}>
                 <InputNumber style={{ width: 100 }} min={0} max={1} value={displaySamplingRate} step={0.05}
@@ -636,11 +679,12 @@ function App() {
                 onChange={(value) => {
                   setClusterPickerCheckboxState(value);
                   if (hc) {
-                    const [newPickedBinDensity, pickedBinClusterAssignment] = getHuesAndDensitiesForClusterPicker(binsInfo, hc, lineSet, value as number[]);
+                    const [newPickedBinDensity, pickedBinClusterAssignment, newLineSetsForPickedClusters] = getHuesAndDensitiesForClusterPicker(binsInfo, hc, lineSet, value as number[]);
                     setPickedBinDensity(newPickedBinDensity);
                     console.log(newPickedBinDensity);
                     const newPickedHues = pickedBinClusterAssignment.map((v) => { return hueCenters[v] });
                     setPickedHues(newPickedHues);
+                    setLineSetsForPickedClusters(newLineSetsForPickedClusters);
                   }
                 }} />
             </div>
@@ -666,8 +710,8 @@ function App() {
             </Row>
             <Divider>Data Options</Divider>
             <Row>
-              <Col span={4} />
-              <Col span={16} >
+              <Col span={3} />
+              <Col span={18} >
                 <Upload
                   accept=".csv"
                   showUploadList={false}
@@ -749,7 +793,6 @@ function App() {
                       }
 
                     });
-
                     return false;
                   }}
                 >
@@ -758,12 +801,11 @@ function App() {
                   </Button>
                 </Upload>
               </Col>
-              <Col span={4} />
+              <Col span={3} />
             </Row>
-            <br />
             <Row>
-              <Col span={5} />
-              <Col span={14} >
+              <Col span={3} />
+              <Col span={18} >
                 <Button type="default" block icon={<DownloadOutlined />}
                   onClick={
                     () => {
@@ -778,11 +820,11 @@ function App() {
                   Download Image
                 </Button>
               </Col>
-              <Col span={5} />
+              <Col span={3} />
             </Row>
             <Row>
-              <Col span={5} />
-              <Col span={14} >
+              <Col span={3} />
+              <Col span={18} >
                 <Button type="default" block icon={<DownloadOutlined />}
                   onClick={
                     () => {
@@ -797,7 +839,27 @@ function App() {
                   Download Picker
                 </Button>
               </Col>
-              <Col span={5} />
+              <Col span={3} />
+            </Row>
+            <Row>
+              <Col span={3} />
+              <Col span={18} >
+                <Button type="default" block icon={<DownloadOutlined />}
+                  onClick={
+                    () => {
+                      const pickedLines = [];
+                      for (let pickedCluster of clusterPickerCheckboxState) {
+                        for (let lineId of lineSetsForPickedClusters[pickedCluster as number]) {
+                          pickedLines.push({ lineId, ...lines[lineId] });
+                        }
+                      }
+                      downloadCSV(pickedLines);
+                    }
+                  }>
+                  Download Picked Lines
+                </Button>
+              </Col>
+              <Col span={3} />
             </Row>
           </Sider>
           <Content style={{ backgroundColor: "#FFFFFF" }}>
