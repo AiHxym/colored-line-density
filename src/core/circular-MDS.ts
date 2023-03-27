@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 11:04:00
- * @LastEditTime: 2023-03-12 14:25:08
+ * @LastEditTime: 2023-03-27 14:27:32
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/circular-MDS.ts
@@ -122,7 +122,7 @@ export default function circularMDS(data: number[][], learningRate: number = 0.1
     }
 
     for (let i = 0; i < hues.length; i++) {
-        hues[i] = hues[i] % 360;
+        hues[i] = (hues[i] % 360 + 360) % 360;
     }
 
     return hues;

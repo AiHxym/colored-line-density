@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-25 20:36:37
+ * @LastEditTime: 2023-03-27 16:21:12
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -225,6 +225,7 @@ function App() {
     console.log('bins:', bins);
 
     const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size))));
+    console.log('binDensityMax:', binDensityMax);
 
     const newBinDensity: { [key: number]: [[number, number], number][] } = {};
     const flattenBins: [[number, number], Set<number>][] = [];
@@ -308,9 +309,12 @@ function App() {
     });
     let hueCountMax = Math.max(...hueCount);
 
+    //console.log(hueCount);
+
 
     let bar = hueCount.map(v => Math.floor(v / hueCountMax * (bar_max - bar_min)) + bar_min);
     //bar = new Array(360).fill(1).map(i => Math.floor(Math.random() * (bar_max - bar_min)) + bar_min);
+
 
 
     //console.log(bar);
@@ -644,7 +648,7 @@ function App() {
             </Row>
             <br />
             <Row>
-              <Col span={14} className="item-text">Sampling bin number: {sampledBinNum > 4000 ? <span style={{ color: "red" }}>{sampledBinNum}</span> : sampledBinNum}</Col>
+              <Col span={14} className="item-text">Number of Sampling Bins: {sampledBinNum > 4000 ? <span style={{ color: "red" }}>{sampledBinNum}</span> : sampledBinNum}</Col>
               <Col span={10}> <Button type="primary" onClick={() => {
                 setMinDensity(minDisplayDensity);
                 setSamplingRate(displaySamplingRate);
@@ -669,7 +673,7 @@ function App() {
                 }} />
             </div>
             <Row>
-              <Col span={24} >Pick Cluster</Col>
+              <Col span={24} >Pick Lines from Clusters</Col>
             </Row>
             <div id='cluster-picker-checkbox'>
               <Checkbox.Group style={{ 'width': '100%', }}
