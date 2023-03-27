@@ -1,4 +1,5 @@
 import FlatQueue from 'flatqueue';
+import intersect from 'fast_array_intersect';
 
 export function intersection(set1: Set<number>, set2: Set<number>): Set<number> {
     return new Set([...set1].filter(x => set2.has(x)));
@@ -61,6 +62,8 @@ export class Hierarchical {
         this.labels = Array(n).fill(-1);
         let currentClustId = -1;
         const priorityQueue = new FlatQueue<number[]>();
+
+        console.time("hierarchical tree preprocessing");
         for (let i = 0; i < n - 1; i++) {
             for (let j = i + 1; j < n; j++) {
                 const dKey = [nodes[i].id, nodes[j].id];
@@ -69,6 +72,7 @@ export class Hierarchical {
                 priorityQueue.push(dKey, distances[dKeyStr]);
             }
         }
+        console.timeEnd("hierarchical tree preprocessing");
 
         while (nodes.length > this.k) {
             let minDist = Infinity;

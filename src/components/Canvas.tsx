@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-03-27 13:37:31
+ * @LastEditTime: 2023-03-28 01:30:11
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -84,8 +84,8 @@ export default function Canvas(props: CanvasProps) {
     useEffect(() => {
         if (props.binsInfo.length > 0) {
             const canvas = document.getElementById('diagram') as HTMLCanvasElement;
-            console.log(props.minDisplayDensity);
-            console.log(prevMinDisplayDensityRef.current);
+            //console.log(props.minDisplayDensity);
+            //console.log(prevMinDisplayDensityRef.current);
             if (prevMinDisplayDensityRef.current !== undefined) {
                 const startDensity = prevMinDisplayDensityRef.current as number;
                 const endDensity = props.minDisplayDensity;

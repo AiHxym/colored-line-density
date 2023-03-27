@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-25 18:41:58
+ * @LastEditTime: 2023-03-28 01:28:46
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -22,12 +22,12 @@ function getRandomSubarray(arr: any[], size: number) {
 
 export function samplingAggregate(flattenBins: [[number, number], Set<number>][], samplingRate = 0.05, minDensity = 8): Hierarchical {
     flattenBins.sort((a, b) => b[1].size - a[1].size);
-    console.log(flattenBins.length);
+    //console.log(flattenBins.length);
     const highDensityBins = flattenBins.filter(v => v[1].size >= (minDensity > 0 ? minDensity : 1));
-    console.log(highDensityBins.length);
+    //console.log(highDensityBins.length);
     const sampledFlattenBins = getRandomSubarray(highDensityBins, Math.floor(highDensityBins.length * samplingRate));
     const sampledBins = sampledFlattenBins.map(v => v[1]);
-    console.log(sampledBins.length);
+    //console.log(sampledBins.length);
     const hc = new Hierarchical(1);
 
     hc.fit(sampledBins);
@@ -243,7 +243,7 @@ export function getHuesAndDensitiesForClusterPicker(bins: Set<number>[][], hc: H
                 lineSetsForPickedClusters[i].add(lineId);
             }
         }
-        console.log(lineSetsForPickedClusters[i].size);
+        //console.log(lineSetsForPickedClusters[i].size);
     }
 
     const binClusterAssignment: number[] = new Array(bins.length * bins[0].length).fill(0);

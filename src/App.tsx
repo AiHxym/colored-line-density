@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-27 16:21:12
+ * @LastEditTime: 2023-03-28 01:31:31
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -173,7 +173,7 @@ function App() {
   const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<Set<number>[]>([]);
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
-    console.log(clusterPickerCheckboxState);
+    //console.log(clusterPickerCheckboxState);
   }, [clusterPickerCheckboxState])
 
   useEffect(() => { // update checkboxState
@@ -222,10 +222,10 @@ function App() {
     console.log('lines changed');
     const bins = binning(lines, { start: 0, stop: canvasWidth, step: binSize }, { start: 0, stop: canvasHeight, step: binSize });
     setBinsInfo(bins);
-    console.log('bins:', bins);
+    //console.log('bins:', bins);
 
     const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size))));
-    console.log('binDensityMax:', binDensityMax);
+    //console.log('binDensityMax:', binDensityMax);
 
     const newBinDensity: { [key: number]: [[number, number], number][] } = {};
     const flattenBins: [[number, number], Set<number>][] = [];
@@ -242,7 +242,9 @@ function App() {
 
     setBinDensity(newBinDensity);
     setMaxDensityValue(binDensityMax);
+    console.time("build hierarchical clustering");
     const hc = samplingAggregate(flattenBins, samplingRate, minDensity);
+    console.timeEnd("build hierarchical clustering");
     if (hc.nodes.length === 0) {
       return;
     }
@@ -685,7 +687,7 @@ function App() {
                   if (hc) {
                     const [newPickedBinDensity, pickedBinClusterAssignment, newLineSetsForPickedClusters] = getHuesAndDensitiesForClusterPicker(binsInfo, hc, lineSet, value as number[]);
                     setPickedBinDensity(newPickedBinDensity);
-                    console.log(newPickedBinDensity);
+                    //console.log(newPickedBinDensity);
                     const newPickedHues = pickedBinClusterAssignment.map((v) => { return hueCenters[v] });
                     setPickedHues(newPickedHues);
                     setLineSetsForPickedClusters(newLineSetsForPickedClusters);
@@ -778,7 +780,7 @@ function App() {
                             lines.push(line);
                           }
                         }
-                        console.log(lines);
+                        //console.log(lines);
 
                         if (lines[lines.length - 1].xValues.length <= 1) {
                           lines.pop();
@@ -791,7 +793,7 @@ function App() {
                         }
 
 
-                        console.log(lines);
+                        //console.log(lines);
                         setLines(lines);
                         setLineSet(new Set(lines.map((line, i) => i)));
                       }
