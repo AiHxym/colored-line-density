@@ -1,5 +1,6 @@
 import FlatQueue from 'flatqueue';
 import { TypedFastBitSet } from 'typedfastbitset';
+type MyTypedFastBitSet = TypedFastBitSet & { sizeStatic?: number };
 
 export function intersection(set1: Set<number>, set2: Set<number>): Set<number> {
     return new Set([...set1].filter(x => set2.has(x)));
@@ -9,23 +10,23 @@ export function union(set1: Set<number>, set2: Set<number>): Set<number> {
     return new Set([...set1, ...set2]);
 }
 
-export function overlapCoefficientDistance(set1: TypedFastBitSet, set2: TypedFastBitSet): number {
+export function overlapCoefficientDistance(set1: MyTypedFastBitSet, set2: MyTypedFastBitSet): number {
     //return 1 - intersection(set1, set2).size / Math.min(set1.size, set2.size);
-    return 1 - set1.intersection_size(set2) / Math.min(set1.size(), set2.size());
+    return 1 - set1.intersection_size(set2) / Math.min((set1 as TypedFastBitSet & { sizeStatic: number }).sizeStatic, (set2 as TypedFastBitSet & { sizeStatic: number }).sizeStatic);
 }
 
 class ClusterNode {
-    aggregateSet: TypedFastBitSet;
+    aggregateSet: MyTypedFastBitSet;
     left: ClusterNode | null;
     right: ClusterNode | null;
     distance: number;
     id: number;
     count: number;
     binIdList: number[];
-    flattenBins: [[number, number], TypedFastBitSet][] | null;
+    flattenBins: [[number, number], MyTypedFastBitSet][] | null;
     centroid: number[] | null;
     hue: number | null;
-    constructor(aggregateSet: TypedFastBitSet, left: ClusterNode | null = null, right: ClusterNode | null = null, distance: number = -1, id: number | null = null, count: number = 1, binIdList: number[] = [], hue: number | null = null) {
+    constructor(aggregateSet: MyTypedFastBitSet, left: ClusterNode | null = null, right: ClusterNode | null = null, distance: number = -1, id: number | null = null, count: number = 1, binIdList: number[] = [], hue: number | null = null) {
         this.aggregateSet = aggregateSet;
         this.left = left;
         this.right = right;
@@ -42,7 +43,7 @@ class ClusterNode {
 export class Hierarchical {
     k: number;
     labels: number[] | null;
-    data: TypedFastBitSet[];
+    data: MyTypedFastBitSet[];
     nodes: ClusterNode[];
 
     constructor(k: number = 1) {
@@ -55,7 +56,7 @@ export class Hierarchical {
         this.nodes = [];
     }
 
-    public fit(data: TypedFastBitSet[]): void {
+    public fit(data: MyTypedFastBitSet[]): void {
         this.data = data;
         const n = data.length;
         const nodes: ClusterNode[] = data.map((v, i) => new ClusterNode(v, null, null, -1, i, 1, [i]));

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-28 03:23:47
+ * @LastEditTime: 2023-03-28 14:43:40
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -23,6 +23,8 @@ import './App.css';
 import { BinningMap, binning } from './core/binning';
 import { samplingAggregate, clusterDivision, clusterDivisionByClusterNum, getNearestClusterNodeId, getHues, getHuesAndDensitiesForClusterPicker } from './core/sampling-aggregate'
 import { Hierarchical } from './core/hierarchical-clustering'
+
+type MyTypedFastBitSet = TypedFastBitSet & { sizeStatic?: number };
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Option } = Select;
@@ -171,7 +173,7 @@ function App() {
   const [pickedBinDensity, setPickedBinDensity] = useState<number[][]>([]);
   const [pickedHues, setPickedHues] = useState<number[]>([]);
   const [initClusterNum, setInitClusterNum] = useState<number>(0);
-  const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<TypedFastBitSet[]>([]);
+  const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<MyTypedFastBitSet[]>([]);
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
     //console.log(clusterPickerCheckboxState);
@@ -225,18 +227,19 @@ function App() {
     setBinsInfo(bins);
     //console.log('bins:', bins);
 
-    const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => bin.size()))));
+    const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => (bin as TypedFastBitSet & { sizeStatic: number }).sizeStatic))));
     //console.log('binDensityMax:', binDensityMax);
 
     const newBinDensity: { [key: number]: [[number, number], number][] } = {};
-    const flattenBins: [[number, number], TypedFastBitSet][] = [];
+    const flattenBins: [[number, number], MyTypedFastBitSet][] = [];
     for (let i = 0; i < bins.length; i++) {
       for (let j = 0; j < bins[i].length; j++) {
         flattenBins.push([[i, j], bins[i][j]]);
-        if (!newBinDensity[bins[i][j].size()]) {
-          newBinDensity[bins[i][j].size()] = [];
+        if (!newBinDensity[(bins[i][j] as TypedFastBitSet & { sizeStatic: number }).sizeStatic]) {
+          newBinDensity[(bins[i][j] as TypedFastBitSet & { sizeStatic: number }).sizeStatic] = [];
         }
-        newBinDensity[bins[i][j].size()].push([[i, j], bins[i][j].size() / binDensityMax]);
+        newBinDensity[(bins[i][j] as TypedFastBitSet & { sizeStatic: number }).sizeStatic]
+          .push([[i, j], (bins[i][j] as TypedFastBitSet & { sizeStatic: number }).sizeStatic / binDensityMax]);
       }
     }
     newBinDensity[0] = [];
@@ -306,7 +309,7 @@ function App() {
 
     let hueCount = new Array(360).fill(0);
     hues.forEach((h, i) => {
-      if (binsInfo[Math.floor(i / binsInfo[0].length)][i % binsInfo[0].length].size() > 0) {
+      if ((binsInfo[Math.floor(i / binsInfo[0].length)][i % binsInfo[0].length] as TypedFastBitSet & { sizeStatic: number }).sizeStatic > 0) {
         ++hueCount[Math.floor(h)];
       }
     });

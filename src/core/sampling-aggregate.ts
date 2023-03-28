@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-28 03:28:02
+ * @LastEditTime: 2023-03-28 14:41:25
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -9,6 +9,7 @@
 import { TypedFastBitSet } from "typedfastbitset";
 import circularMDS from "./circular-MDS";
 import { Hierarchical, intersection, union, overlapCoefficientDistance } from "./hierarchical-clustering";
+type MyTypedFastBitSet = TypedFastBitSet & { sizeStatic?: number };
 
 function getRandomSubarray(arr: any[], size: number) {
     var shuffled = arr.slice(0), i = arr.length, min = i - size, temp, index;
@@ -21,10 +22,10 @@ function getRandomSubarray(arr: any[], size: number) {
     return shuffled.slice(min);
 }
 
-export function samplingAggregate(flattenBins: [[number, number], TypedFastBitSet][], samplingRate = 0.05, minDensity = 8): Hierarchical {
-    flattenBins.sort((a, b) => b[1].size() - a[1].size());
+export function samplingAggregate(flattenBins: [[number, number], MyTypedFastBitSet][], samplingRate = 0.05, minDensity = 8): Hierarchical {
+    flattenBins.sort((a, b) => (b[1] as TypedFastBitSet & { sizeStatic: number }).sizeStatic - (a[1] as TypedFastBitSet & { sizeStatic: number }).sizeStatic);
     //console.log(flattenBins.length);
-    const highDensityBins = flattenBins.filter(v => v[1].size() >= (minDensity > 0 ? minDensity : 1));
+    const highDensityBins = flattenBins.filter(v => (v[1] as TypedFastBitSet & { sizeStatic: number }).sizeStatic >= (minDensity > 0 ? minDensity : 1));
     //console.log(highDensityBins.length);
     const sampledFlattenBins = getRandomSubarray(highDensityBins, Math.floor(highDensityBins.length * samplingRate));
     const sampledBins = sampledFlattenBins.map(v => v[1]);
@@ -46,7 +47,7 @@ export function clusterDivision(hc: Hierarchical, divideNodeId: number, lineSet:
                 subNode1.flattenBins = [];
                 subNode2.flattenBins = [];
 
-                const flattenBins = node.flattenBins as [[number, number], TypedFastBitSet][];
+                const flattenBins = node.flattenBins as [[number, number], MyTypedFastBitSet][];
 
                 const modelCentroids: number[][] = [];
                 //const modelSets: TypedFastBitSet[] = [];
@@ -54,7 +55,7 @@ export function clusterDivision(hc: Hierarchical, divideNodeId: number, lineSet:
                     const model: number[] = new Array(lineSet.size).fill(0);
                     //const modelSet = new TypedFastBitSet();
                     for (const binId of cluster.binIdList) {
-                        for (const lineId of (hc.data as TypedFastBitSet[])[binId]) {
+                        for (const lineId of (hc.data as MyTypedFastBitSet[])[binId]) {
                             model[lineId] += 1;
                             //modelSet.add(lineId);
                         }
@@ -125,8 +126,8 @@ export function clusterDivisionByClusterNum(hc: Hierarchical, clusterNum: number
     }
 }
 
-export function getNearestClusterNodeId(bin: TypedFastBitSet, hc: Hierarchical) {
-    const binVector = new Array(bin.size()).fill(1);
+export function getNearestClusterNodeId(bin: MyTypedFastBitSet, hc: Hierarchical) {
+    const binVector = new Array((bin as TypedFastBitSet & { sizeStatic: number }).sizeStatic).fill(1);
     const modelCentroids: number[][] = [];
     const lineIdMapping: { [key: number]: number } = {};
 
@@ -136,7 +137,7 @@ export function getNearestClusterNodeId(bin: TypedFastBitSet, hc: Hierarchical) 
     }
 
     for (const cluster of hc.nodes) {
-        const model = new Array(bin.size()).fill(0);
+        const model = new Array((bin as TypedFastBitSet & { sizeStatic: number }).sizeStatic).fill(0);
         for (const binId of cluster.binIdList) {
             for (const lineId of hc.data[binId]) {
                 model[lineIdMapping[lineId]] += 1;
@@ -163,13 +164,13 @@ export function getNearestClusterNodeId(bin: TypedFastBitSet, hc: Hierarchical) 
     return hc.nodes[minIndex].id;
 }
 
-export function getHues(bins: TypedFastBitSet[][], hc: Hierarchical, previosHues: number[] = [], ifFixClusterColor: boolean[] = []): [number[], number[]] {
+export function getHues(bins: MyTypedFastBitSet[][], hc: Hierarchical, previosHues: number[] = [], ifFixClusterColor: boolean[] = []): [number[], number[]] {
     //const hues = new Array(bins.length * bins[0].length).fill(0);
     if (hc.nodes.length <= 1) {
-        const flattenBins: [[number, number], TypedFastBitSet][] = [];
+        const flattenBins: [[number, number], MyTypedFastBitSet][] = [];
         for (let i = 0; i < bins.length; i++) {
             for (let j = 0; j < bins[i].length; j++) {
-                if (bins[i][j].size() > 0) {
+                if ((bins[i][j] as TypedFastBitSet & { sizeStatic: number }).sizeStatic > 0) {
                     flattenBins.push([[i, j], bins[i][j]]);
                 }
             }
@@ -202,7 +203,7 @@ export function getHues(bins: TypedFastBitSet[][], hc: Hierarchical, previosHues
     for (let i = 0; i < hc.nodes.length; i++) {
         hc.nodes[i].hue = hueOfModelCentroids[i];
         const node = hc.nodes[i];
-        for (const flattenBin of node.flattenBins as [[number, number], TypedFastBitSet][]) {
+        for (const flattenBin of node.flattenBins as [[number, number], MyTypedFastBitSet][]) {
             //hues[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = hueOfModelCentroids[i];
             binClusterAssignment[flattenBin[0][0] * bins[0].length + flattenBin[0][1]] = i;
         }
@@ -211,21 +212,25 @@ export function getHues(bins: TypedFastBitSet[][], hc: Hierarchical, previosHues
     return [hueOfModelCentroids, binClusterAssignment];
 }
 
-export function getHuesAndDensitiesForClusterPicker(bins: TypedFastBitSet[][], hc: Hierarchical, lineSet: Set<number>, pickedClusters: number[]): [number[][], number[], TypedFastBitSet[]] {
+export function getHuesAndDensitiesForClusterPicker(bins: MyTypedFastBitSet[][], hc: Hierarchical, lineSet: Set<number>, pickedClusters: number[]): [number[][], number[], MyTypedFastBitSet[]] {
     const binDensity: number[][] = new Array(bins.length).fill(0).map(v => new Array(bins[0].length).fill(0));
     const lineImportancesDict: { [key: number]: number[] } = {}; // lineId -> importance array of all cluster
-    const lineAppearancesDict: { [key: number]: number[] } = {}; // lineId -> appearance count of all cluster
+    //const lineAppearancesDict: { [key: number]: number[] } = {}; // lineId -> appearance count of all cluster
     for (let lineId of lineSet) {
         lineImportancesDict[lineId] = new Array(hc.nodes.length).fill(0);
-        lineAppearancesDict[lineId] = new Array(hc.nodes.length).fill(0);
+        //lineAppearancesDict[lineId] = new Array(hc.nodes.length).fill(0);
     }
 
     for (let nodeInx = 0; nodeInx < hc.nodes.length; nodeInx++) {
         const node = hc.nodes[nodeInx];
-        for (const flattenBin of node.flattenBins as [[number, number], TypedFastBitSet][]) {
+        if (node.flattenBins === null) {
+            continue;
+        }
+        //const flattenBinsDensity = node.flattenBins.map(v => v[1].size());
+        for (const flattenBin of node.flattenBins as [[number, number], MyTypedFastBitSet][]) {
             for (const lineId of flattenBin[1]) {
-                lineImportancesDict[lineId][nodeInx] += flattenBin[1].size();
-                lineAppearancesDict[lineId][nodeInx] += 1;
+                lineImportancesDict[lineId][nodeInx] += (flattenBin[1] as TypedFastBitSet & { sizeStatic: number }).sizeStatic;
+                //lineAppearancesDict[lineId][nodeInx] += 1;
             }
         }
     }
