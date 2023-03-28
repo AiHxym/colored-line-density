@@ -1,11 +1,12 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-07-28 15:56:47
- * @LastEditTime: 2023-02-14 00:11:22
+ * @LastEditTime: 2023-03-28 02:03:11
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/binning.ts
  */
+import { TypedFastBitSet } from "typedfastbitset";
 interface BinConfig {
     /**
      * The start of the range.
@@ -21,14 +22,14 @@ interface BinConfig {
     step: number;
 }
 
-export type BinningMap = Set<number>[][];
+export type BinningMap = TypedFastBitSet[][];
 
 export function binning(lines: { times?: number[]; xValues: number[]; yValues: number[] }[], binX: BinConfig, binY: BinConfig) {
 
     const bins: BinningMap =
         new Array((binX.stop - binX.start) / binX.step)
             .fill(0)
-            .map(() => new Array((binY.stop - binY.start) / binY.step).fill(0).map(() => new Set<number>()));
+            .map(() => new Array((binY.stop - binY.start) / binY.step).fill(0).map(() => new TypedFastBitSet()));
 
 
 

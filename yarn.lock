@@ -10060,6 +10060,11 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
+typedfastbitset@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/typedfastbitset/-/typedfastbitset-0.4.1.tgz#9201e60ccdbcb62539d232373863f967ec059ff2"
+  integrity sha512-OrXHvpfSmgklzUxPApCXumSu5aYpnvDwy1kxOgmX42jREjvEX+n4D2cj2RBMIVDBWzxR0QXQwkctXM6Zut/PqQ==
+
 typescript@^4.4.2:
   version "4.9.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
