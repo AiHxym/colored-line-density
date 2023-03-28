@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-28 14:43:40
+ * @LastEditTime: 2023-03-28 14:53:57
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -689,7 +689,9 @@ function App() {
                 onChange={(value) => {
                   setClusterPickerCheckboxState(value);
                   if (hc) {
+                    console.time('line filter');
                     const [newPickedBinDensity, pickedBinClusterAssignment, newLineSetsForPickedClusters] = getHuesAndDensitiesForClusterPicker(binsInfo, hc, lineSet, value as number[]);
+                    console.timeEnd('line filter');
                     setPickedBinDensity(newPickedBinDensity);
                     //console.log(newPickedBinDensity);
                     const newPickedHues = pickedBinClusterAssignment.map((v) => { return hueCenters[v] });
