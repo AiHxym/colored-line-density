@@ -69,7 +69,6 @@ export class Hierarchical {
         let currentClustId = data.length;
         const priorityQueue = new FlatQueue<number[]>();
 
-        console.time("hierarchical tree preprocessing");
         for (let i = 0; i < n - 1; i++) {
             for (let j = i + 1; j < n; j++) {
                 const dKey = [nodes[i].id, nodes[j].id];
@@ -77,7 +76,6 @@ export class Hierarchical {
                 priorityQueue.push(dKey, distances[nodes[i].id][nodes[j].id]);
             }
         }
-        console.timeEnd("hierarchical tree preprocessing");
 
         while (nodes.length > this.k) {
             let minDist = Infinity;

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-28 02:21:24
+ * @LastEditTime: 2023-03-28 03:28:02
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -30,7 +30,9 @@ export function samplingAggregate(flattenBins: [[number, number], TypedFastBitSe
     const sampledBins = sampledFlattenBins.map(v => v[1]);
     //console.log(sampledBins.length);
     const hc = new Hierarchical(1);
+    console.time("hierarchical tree preprocessing");
     hc.fit(sampledBins);
+    console.timeEnd("hierarchical tree preprocessing");
     return hc;
 }
 
@@ -47,14 +49,18 @@ export function clusterDivision(hc: Hierarchical, divideNodeId: number, lineSet:
                 const flattenBins = node.flattenBins as [[number, number], TypedFastBitSet][];
 
                 const modelCentroids: number[][] = [];
+                //const modelSets: TypedFastBitSet[] = [];
                 for (const cluster of [subNode1, subNode2]) {
                     const model: number[] = new Array(lineSet.size).fill(0);
+                    //const modelSet = new TypedFastBitSet();
                     for (const binId of cluster.binIdList) {
                         for (const lineId of (hc.data as TypedFastBitSet[])[binId]) {
                             model[lineId] += 1;
+                            //modelSet.add(lineId);
                         }
                     }
                     modelCentroids.push(model);
+                    //modelSets.push(modelSet);
                 }
 
                 modelCentroids[0] = modelCentroids[0].map(v => v / subNode1.binIdList.length);
@@ -62,20 +68,34 @@ export function clusterDivision(hc: Hierarchical, divideNodeId: number, lineSet:
                 subNode1.centroid = modelCentroids[0];
                 subNode2.centroid = modelCentroids[1];
 
-                for (const flattenBin of flattenBins) {
-                    const binVector = new Array(lineSet.size).fill(0);
-                    for (const lineId of flattenBin[1]) {
-                        binVector[lineId] = 1;
-                    }
 
-                    const nonZero = binVector.map((v, i) => v === 0 ? null : i).filter(v => v !== null) as number[];
-                    if (nonZero.map(v => Math.abs(binVector[v] - modelCentroids[0][v])).reduce((a, b) => a + b, 0)
-                        < nonZero.map(v => Math.abs(binVector[v] - modelCentroids[1][v])).reduce((a, b) => a + b, 0)) {
+                console.time("binsDivision");
+                for (const flattenBin of flattenBins) {
+                    // const binVector = new Array(lineSet.size).fill(0);
+                    // for (const lineId of flattenBin[1]) {
+                    //     binVector[lineId] = 1;
+                    // }
+
+                    //const nonZero = binVector.map((v, i) => v === 0 ? null : i).filter(v => v !== null) as number[];
+
+                    //if (nonZero.map(v => Math.abs(binVector[v] - modelCentroids[0][v])).reduce((a, b) => a + b, 0)
+                    //< nonZero.map(v => Math.abs(binVector[v] - modelCentroids[1][v])).reduce((a, b) => a + b, 0)) {
+                    //subNode1.flattenBins.push(flattenBin);
+                    //} else {
+                    //  subNode2.flattenBins.push(flattenBin);
+                    //}
+                    let modelDist = 0;
+
+                    for (const lineId of flattenBin[1]) {
+                        modelDist += modelCentroids[0][lineId] - modelCentroids[1][lineId];
+                    }
+                    if (modelDist > 0) {
                         subNode1.flattenBins.push(flattenBin);
                     } else {
                         subNode2.flattenBins.push(flattenBin);
                     }
                 }
+                console.timeEnd("binsDivision");
             }
 
             if (subNode1 !== null) {
@@ -191,7 +211,7 @@ export function getHues(bins: TypedFastBitSet[][], hc: Hierarchical, previosHues
     return [hueOfModelCentroids, binClusterAssignment];
 }
 
-export function getHuesAndDensitiesForClusterPicker(bins: TypedFastBitSet[][], hc: Hierarchical, lineSet: Set<number>, pickedClusters: number[]): [number[][], number[], Set<number>[]] {
+export function getHuesAndDensitiesForClusterPicker(bins: TypedFastBitSet[][], hc: Hierarchical, lineSet: Set<number>, pickedClusters: number[]): [number[][], number[], TypedFastBitSet[]] {
     const binDensity: number[][] = new Array(bins.length).fill(0).map(v => new Array(bins[0].length).fill(0));
     const lineImportancesDict: { [key: number]: number[] } = {}; // lineId -> importance array of all cluster
     const lineAppearancesDict: { [key: number]: number[] } = {}; // lineId -> appearance count of all cluster
@@ -235,7 +255,7 @@ export function getHuesAndDensitiesForClusterPicker(bins: TypedFastBitSet[][], h
     //console.log(lineAllocations);
 
 
-    const lineSetsForPickedClusters = new Array(pickedClusters.length).fill(0).map(v => new Set<number>());
+    const lineSetsForPickedClusters = new Array(pickedClusters.length).fill(0).map(v => new TypedFastBitSet());
     for (let i = 0; i < pickedClusters.length; i++) {
         const pickedCluster = pickedClusters[i];
         for (let lineId of lineSet) {
@@ -253,7 +273,7 @@ export function getHuesAndDensitiesForClusterPicker(bins: TypedFastBitSet[][], h
             const bin = bins[i][j];
             let maxSimilarity = -Infinity;
             for (let k = 0; k < lineSetsForPickedClusters.length; k++) {
-                const lineSetForPickedCluster = new TypedFastBitSet([...lineSetsForPickedClusters[k]]);
+                const lineSetForPickedCluster = lineSetsForPickedClusters[k];
                 if (bin.intersection_size(lineSetForPickedCluster) > maxSimilarity) {
                     binClusterAssignment[i * bins[0].length + j] = pickedClusters[k];
                     binDensity[i][j] = bin.intersection_size(lineSetForPickedCluster);

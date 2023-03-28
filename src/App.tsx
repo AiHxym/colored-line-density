@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-28 02:20:54
+ * @LastEditTime: 2023-03-28 03:23:47
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -171,7 +171,7 @@ function App() {
   const [pickedBinDensity, setPickedBinDensity] = useState<number[][]>([]);
   const [pickedHues, setPickedHues] = useState<number[]>([]);
   const [initClusterNum, setInitClusterNum] = useState<number>(0);
-  const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<Set<number>[]>([]);
+  const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<TypedFastBitSet[]>([]);
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
     //console.log(clusterPickerCheckboxState);
