@@ -731,7 +731,7 @@ def tranverse_lat_lng(x, y):
 	lng = mrp_lng + x * deg_per_meter / np.cos(np.radians(mrp_lat))
 	return lng, lat
 
-dir = './10. Flight tracks Northern California TRACON/'
+dir = './10.Flight tracks Northern California TRACON/'
 all_files = []
 for folder in list_dir(dir, find_type='folder'):
 	for file in list_dir(dir + folder):
@@ -867,8 +867,7 @@ print(data.shape)						# (9114409, 4)
 print(len(data['lineId'].unique()))		# 12907
 data.to_csv(results_folder + '12.OpenSky_US_20200525.csv', index=False)
 
-# %%
-# random sample 5000 lines
+# sample 5000 lines
 lineIds = data['lineId'].unique()
 lineIds = np.random.choice(lineIds, 5000, replace=False)
 data_sample = data[data['lineId'].isin(lineIds)]
@@ -876,3 +875,161 @@ data_sample.reset_index(drop=True, inplace=True)
 print(data_sample.shape)					# (3483903, 4) # sure it is random
 print(len(data_sample['lineId'].unique()))	# 5000
 data_sample.to_csv(results_folder + '12.OpenSky_US_20200525_sample5000.csv', index=False)
+
+
+# %% 13. S&P 500 companies stocks #############################################################
+
+# structure of the data
+# Date,Open,High,Low,Close,Volume,Dividends,Stock Splits
+
+data_folder = './13.S&P500/'
+datasets = list_dir(data_folder, find_type='file')
+all_data = []
+for d in tqdm(datasets):
+	data = pd.read_csv(data_folder + d)
+	data['lineId'] = d.split('.')[0]
+	data['time'] = pd.to_datetime(data['Date']).apply(lambda x: x.timestamp())
+	data = data[['lineId', 'time', 'Close']]
+	data.columns = ['lineId', 'x', 'y']
+	all_data.append(data)
+
+data = pd.concat(all_data, axis=0)
+data.dropna(inplace=True)
+data.drop_duplicates(inplace=True)
+data.reset_index(drop=True, inplace=True)
+print(data.shape)
+print(len(data['lineId'].unique()))
+data.to_csv(results_folder + '13.S&P500.csv', index=False)
+
+# only keep those after 2000, and under 800
+# calculate the timestamp of 2000-01-01
+data = data[data['x'] > 946684800] # pd.to_datetime('2000-01-01').timestamp()
+data = data[data['y'] < 800]
+print(data.shape)
+print(len(data['lineId'].unique()))
+data.to_csv(results_folder + '13.S&P500_2000-800.csv', index=False)
+# %% 14. Daily Temperature of Major Cities #####################################################
+
+# structure of the data
+# Region,Country,State,City,Month,Day,Year,AvgTemperature
+
+data_folder = './14.DailyTemperature/'
+data = pd.read_csv(data_folder + 'city_temperature.csv')
+data.dropna(inplace=True)
+data.drop_duplicates(inplace=True)
+data.reset_index(drop=True, inplace=True)
+data['lineId'] = data['City'].astype(str)
+data['time'] = pd.to_datetime(data[['Year', 'Month', 'Day']])
+data['time'] = data['time'].apply(lambda x: x.timestamp())
+data = data[['lineId', 'time', 'AvgTemperature']]
+data.columns = ['lineId', 'x', 'y']
+
+# remove where the temperature is -99
+data = data[data['y'] != -99]
+plt.hist(data['y'], bins=100)
+
+# convert the unit of temperature from Fahrenheit to Celsius
+data['y'] = (data['y'] - 32) * 5 / 9
+plt.hist(data['y'], bins=100)
+
+print(data.shape)
+print(len(data['lineId'].unique()))
+data.to_csv(results_folder + '14.DailyTemperature.csv', index=False)
+
+# %% 15. Air Quality in India ###############################################################
+
+# structure of the data
+# StationId,Datetime,PM2.5,PM10,NO,NO2,NOx,NH3,CO,SO2,O3,Benzene,Toluene,Xylene,AQI,AQI_Bucket
+
+import copy
+data_folder = './15.AirQualityIndia/'
+data = pd.read_csv(data_folder + 'station_hour.csv')
+data['time'] = pd.to_datetime(data['Datetime']).apply(lambda x: x.timestamp())
+
+def save_csv(quality):
+	# only keep the data of the quality, use deepcopy to avoid changing the original data
+	data_save = copy.deepcopy(data[['StationId', 'time', quality]])
+	data_save.dropna(inplace=True)
+	data_save.drop_duplicates(inplace=True)
+	data_save.reset_index(drop=True, inplace=True)
+	data_save.columns = ['lineId', 'x', 'y']
+	print(quality)
+	print(data_save.shape)
+	print(len(data_save['lineId'].unique()))
+	print()
+	data_save.to_csv(results_folder + '15.AirQualityIndia_' + quality + '.csv', index=False)
+
+for quality in ['PM2.5', 'PM10', 'NO', 'NO2', 'NOx', 'NH3', 'CO', 'SO2', 'O3', 'Benzene', 'Toluene', 'Xylene', 'AQI']:
+	save_csv(quality)
+
+# %% 16. PEMS-SF ###############################################################
+
+# 963 sensors
+# 144 records per day
+# 440 days
+
+# stations_list: id of the sensors [INT INT INT ...]
+# randperm: random permutation of the days [INT INT INT ...] (1~440)
+# PEMS_train/PEMS_test: the data of the sensors:
+# 	Matlab matrix format, but not .mat file
+# 	[FLOAT FLOAT FLOAT ...;FLOAT FLOAT FLOAT ...; ...]
+# 	each row: 963 sensors (rows) * 144 records per day (columns)
+# 	440 rows in total of 2 files
+
+data_folder = './16.PEMS-SF/'
+
+with open(data_folder + 'stations_list') as f:
+	stations = f.readlines()[0]
+	stations = stations[1:-2].split(' ')
+	stations = [x.strip() for x in stations]
+	print(len(stations))
+
+with open(data_folder + 'randperm') as f:
+	days = f.readlines()[0]
+	days = days[1:-2].split(' ')
+	days = [int(x.strip()) for x in days]
+	print(len(days))
+
+# read the data as strings, each row is a day
+data_str = []
+with open(data_folder + 'PEMS_train') as f:
+	data_str = f.readlines()
+print(len(data_str))
+with open(data_folder + 'PEMS_test') as f:
+	data_str += f.readlines()
+print(len(data_str))
+
+# re-format the data into 963 * (144 * 440) matrix, each row is a sensor
+# days are in the order of randperm
+data = np.zeros((963, 144 * 440))
+for i in tqdm(range(len(days))):
+	day_str = data_str[days[i] - 1]
+	day_records = day_str[1:-2].split(';')	# each row is a sensor
+	day_records = [x.split(' ') for x in day_records]
+	day_records = [[float(x) for x in row] for row in day_records]	# 963 * 144
+	data[:, i * 144 : (i + 1) * 144] = day_records
+
+#%% convert the data into a dataframe
+
+# # only keep the first 7 days
+# data_part = data[:, :7 * 144]
+# # only keep the 7th day to the 13th day
+# data_part = data[:, 6 * 144 : 13 * 144]
+# only keep the 7th day to the 20th day
+data_part = data[:, 6 * 144 : 20 * 144]
+
+# convert
+# columns: lineId, x, y
+# lineId: id of the sensor
+# x: index of the record
+# y: value of the record
+data_df = pd.DataFrame(data_part)
+data_df = data_df.stack().reset_index()
+data_df.columns = ['lineId', 'x', 'y']
+data_df['lineId'] = data_df['lineId'].apply(lambda x: stations[x])
+data_df['x'] = data_df['x'].apply(lambda x: x + 1)
+# data_df.to_csv(results_folder + '16.PEMS-SF_full.csv', index=False) # 1.2 GB
+# data_df.to_csv(results_folder + '16.PEMS-SF_50days.csv', index=False)
+data_df.to_csv(results_folder + '16.PEMS-SF_2weeks.csv', index=False)
+
+# %%
