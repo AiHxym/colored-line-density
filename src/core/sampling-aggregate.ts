@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2023-02-13 15:43:03
- * @LastEditTime: 2023-03-28 14:41:25
+ * @LastEditTime: 2023-03-29 20:07:36
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/sampling-aggregate.ts
@@ -268,7 +268,7 @@ export function getHuesAndDensitiesForClusterPicker(bins: MyTypedFastBitSet[][],
                 lineSetsForPickedClusters[i].add(lineId);
             }
         }
-        //console.log(lineSetsForPickedClusters[i].size);
+        console.log("picked line number:", lineSetsForPickedClusters[i].size());
     }
 
     const binClusterAssignment: number[] = new Array(bins.length * bins[0].length).fill(0);

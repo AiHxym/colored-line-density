@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-03-28 14:53:57
+ * @LastEditTime: 2023-04-03 20:15:16
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -28,6 +28,36 @@ type MyTypedFastBitSet = TypedFastBitSet & { sizeStatic?: number };
 
 const { Header, Footer, Sider, Content } = Layout;
 const { Option } = Select;
+
+const exampleData = [{
+  name: "temperature",
+  path: "./data/temperature.csv",
+  minDensity: 10,
+  samplingRate: 0.1,
+  width: 1000,
+  height: 500
+}, {
+  name: "stock",
+  path: "./data/stock.csv",
+  minDensity: 10,
+  samplingRate: 0.1,
+  width: 1000,
+  height: 500
+}, {
+  name: "taxi",
+  path: "./data/taxi.csv",
+  minDensity: 10,
+  samplingRate: 0.1,
+  width: 700,
+  height: 700
+}, {
+  name: "ship",
+  path: "./data/ship.csv",
+  minDensity: 10,
+  samplingRate: 0.1,
+  width: 700,
+  height: 700
+}];
 
 let a1 = 360 * 0.05;  // i, L, I
 let a2 = 360 * 0.22;  // L
@@ -174,6 +204,7 @@ function App() {
   const [pickedHues, setPickedHues] = useState<number[]>([]);
   const [initClusterNum, setInitClusterNum] = useState<number>(0);
   const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<MyTypedFastBitSet[]>([]);
+  const [exampleDataUrl, setExampleDataUrl] = useState<string>('');
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
     //console.log(clusterPickerCheckboxState);
@@ -227,8 +258,9 @@ function App() {
     setBinsInfo(bins);
     //console.log('bins:', bins);
 
-    const binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => (bin as TypedFastBitSet & { sizeStatic: number }).sizeStatic))));
-    //console.log('binDensityMax:', binDensityMax);
+    let binDensityMax = Math.max(...bins.map(binCol => Math.max(...binCol.map(bin => (bin as TypedFastBitSet & { sizeStatic: number }).sizeStatic))));
+    //binDensityMax = 31;
+    console.log('binDensityMax:', binDensityMax);
 
     const newBinDensity: { [key: number]: [[number, number], number][] } = {};
     const flattenBins: [[number, number], MyTypedFastBitSet][] = [];
@@ -729,12 +761,12 @@ function App() {
                   showUploadList={false}
                   withCredentials={true}
                   method='post'
+                  action={exampleDataUrl}
                   beforeUpload={file => {
                     papa.parse(file, {
                       header: true,
                       dynamicTyping: true,
                       complete: (results: papa.ParseResult<any>) => {
-
                         function groupBy(xs: any[], key: string) {
                           return xs.reduce(function (rv, x) {
                             (rv[x[key]] = rv[x[key]] || []).push(x);
@@ -875,6 +907,84 @@ function App() {
             </Row>
           </Sider>
           <Content style={{ backgroundColor: "#FFFFFF" }}>
+            {exampleDataUrl === "" && exampleData.map((data, i) => <Button key={i} onClick={() => {
+              setExampleDataUrl(data.path);
+              papa.parse(data.path, {
+                header: true,
+                dynamicTyping: true,
+                download: true,
+                complete: (results: papa.ParseResult<any>) => {
+                  function groupBy(xs: any[], key: string) {
+                    return xs.reduce(function (rv, x) {
+                      (rv[x[key]] = rv[x[key]] || []).push(x);
+                      return rv;
+                    }, {});
+                  };
+
+                  const data = results.data;
+                  const groupedData = groupBy(data, 'lineId');
+                  const lines: { times?: number[]; xValues: number[]; yValues: number[]; }[] = [];
+
+                  let xMin = Infinity;
+                  let xMax = -Infinity;
+                  let yMin = Infinity;
+                  let yMax = -Infinity;
+
+                  for (let rawLine of Object.values(groupedData) as { lineId: number; time?: string; x: string; y: string }[][]) {
+                    if (rawLine[0].time) {
+                      (rawLine as { lineId: number; time: string; x: string; y: string }[]).sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
+                    } else {
+                      rawLine.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
+                    }
+
+
+
+                    if (rawLine[0].time !== undefined) {
+                      const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
+                      for (let i = 0; i < rawLine.length; ++i) {
+                        line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
+                        line.xValues.push(parseFloat(rawLine[i].x));
+                        line.yValues.push(parseFloat(rawLine[i].y));
+                      }
+                      if (line.xValues.length <= 1) continue;
+                      xMin = Math.min(xMin, ...line.xValues);
+                      xMax = Math.max(xMax, ...line.xValues);
+                      yMin = Math.min(yMin, ...line.yValues);
+                      yMax = Math.max(yMax, ...line.yValues);
+                      lines.push(line);
+                    } else {
+                      const line: { xValues: number[], yValues: number[] } = { xValues: [], yValues: [] };
+                      for (let i = 0; i < rawLine.length; ++i) {
+                        line.xValues.push(parseFloat(rawLine[i].x));
+                        line.yValues.push(parseFloat(rawLine[i].y));
+                      }
+                      if (line.xValues.length <= 1) continue;
+                      xMin = Math.min(xMin, ...line.xValues);
+                      xMax = Math.max(xMax, ...line.xValues);
+                      yMin = Math.min(yMin, ...line.yValues);
+                      yMax = Math.max(yMax, ...line.yValues);
+                      lines.push(line);
+                    }
+                  }
+                  //console.log(lines);
+
+                  if (lines[lines.length - 1].xValues.length <= 1) {
+                    lines.pop();
+                  }
+
+                  // normalize data
+                  for (let line of lines) {
+                    line.xValues = line.xValues.map(x => (x - xMin) / (xMax - xMin) * canvasWidth);
+                    line.yValues = line.yValues.map(y => (y - yMin) / (yMax - yMin) * canvasHeight);
+                  }
+
+
+                  //console.log(lines);
+                  setLines(lines);
+                  setLineSet(new Set(lines.map((line, i) => i)));
+                }
+              });
+            }}>{data.name}</Button>)}
             <div style={{ height: "20px" }} />
             <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
               binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}

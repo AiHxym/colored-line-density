@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2023-03-27 16:27:02
+ * @LastEditTime: 2023-03-29 20:51:39
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -43,6 +43,7 @@ export function render(bins: BinningMap, binDensity: { [key: number]: [[number, 
                     Math.pow(maxLuminance - (maxLuminance - minLuminance) * binDensityValue, 1.5) * 100).hex();
             }
             //binColor = colorMap(1 - binDensityValue);
+
             ctx.fillStyle = binColor;
             ctx.fillRect(binX, binY, binWidth, binHeight);
         }

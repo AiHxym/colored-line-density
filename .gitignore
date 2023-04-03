@@ -26,3 +26,4 @@ data/*
 !data/*.py
 !data/mapbox.html
 !data/result_images
+public/data/ship.csv
