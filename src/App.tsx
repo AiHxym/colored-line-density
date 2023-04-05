@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-04-05 12:19:34
+ * @LastEditTime: 2023-04-05 19:41:52
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -12,7 +12,7 @@ import 'antd/dist/antd.min.css';
 import {
   Button, InputNumber, Layout, Select, Divider,
   Row, Col, Slider, Upload, Checkbox, CheckboxOptionType,
-  Spin
+  Spin, Modal
 } from "antd";
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import Canvas from './components/Canvas';
@@ -30,35 +30,64 @@ type MyTypedFastBitSet = TypedFastBitSet & { sizeStatic?: number };
 const { Header, Footer, Sider, Content } = Layout;
 const { Option } = Select;
 
-const exampleData = [{
-  name: "temperature.csv (30.3MB)",
-  path: "./data/temperature.csv",
-  minDensity: 98,
-  samplingRate: 0.09,
-  width: 1000,
-  height: 500
-}, {
-  name: "stock.csv (34.7MB)",
-  path: "./data/stock.csv",
-  minDensity: 27,
-  samplingRate: 0.07,
-  width: 1000,
-  height: 500
-}, {
-  name: "taxi.csv (30.5MB)",
-  path: "./data/taxi.csv",
-  minDensity: 10,
-  samplingRate: 0.1,
-  width: 700,
-  height: 700
-}, {
-  name: "ship",
-  path: "./data/ship.csv",
-  minDensity: 10,
-  samplingRate: 0.1,
-  width: 700,
-  height: 700
-}];
+const exampleData = [
+  {
+    name: "Synthetic Data1.csv (2.3MB)",
+    path: "./data/example1.csv",
+    minDensity: 10,
+    samplingRate: 0.05,
+    width: 1000,
+    height: 500
+  }, {
+    name: "Synthetic Data2.csv (1MB)",
+    path: "./data/example7.csv",
+    minDensity: 10,
+    samplingRate: 0.1,
+    width: 1000,
+    height: 500
+  }, {
+    name: "Synthetic Data3.csv (6.4MB)",
+    path: "./data/example2.csv",
+    minDensity: 25,
+    samplingRate: 0.05,
+    width: 1000,
+    height: 500
+  }, {
+    name: "Synthetic Data4.csv (1MB)",
+    path: "./data/example6.csv",
+    minDensity: 7,
+    samplingRate: 0.25,
+    width: 1000,
+    height: 500
+  }, {
+    name: "temperature.csv (30.3MB)",
+    path: "./data/temperature.csv",
+    minDensity: 98,
+    samplingRate: 0.09,
+    width: 1000,
+    height: 500
+  }, {
+    name: "stock.csv (34.7MB)",
+    path: "./data/stock.csv",
+    minDensity: 27,
+    samplingRate: 0.07,
+    width: 1000,
+    height: 500
+  }, {
+    name: "taxi.csv (30.5MB)",
+    path: "./data/taxi.csv",
+    minDensity: 142,
+    samplingRate: 0.5,
+    width: 700,
+    height: 700
+  }, {
+    name: "ship.csv (363MB)",
+    path: "./data/ship.csv",
+    minDensity: 10,
+    samplingRate: 0.1,
+    width: 700,
+    height: 700
+  }];
 
 let a1 = 360 * 0.05;  // i, L, I
 let a2 = 360 * 0.22;  // L
@@ -207,6 +236,7 @@ function App() {
   const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<MyTypedFastBitSet[]>([]);
   const [exampleDataUrl, setExampleDataUrl] = useState<string>('');
   const [ifLoading, setIfLoading] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (exampleDataUrl === '') return;
@@ -1002,6 +1032,7 @@ function App() {
                 setSamplingRate(dataI.samplingRate);
                 setDisplaySamplingRate(dataI.samplingRate);
                 setIfLoading(true);
+                setIsModalOpen(true);
               }}>{dataI.name}</Button>))}
             <div style={{ height: "20px" }} />
             <Spin tip="Loading..." spinning={ifLoading}>
@@ -1038,6 +1069,13 @@ function App() {
                 pickedBinDensity={pickedBinDensity}
                 pickedHues={pickedHues}></Canvas>
             </Spin>
+            <Modal title="Hierarchical clustering tree successfully completed with recommended parameters after data load" open={isModalOpen} closable={false}
+              onOk={() => { setIsModalOpen(false) }}>
+              <p>The <strong>example data requires downloading</strong> and has been pre-set with recommended <strong>sampling rates</strong> and <strong>density thresholds</strong>. This results in a <strong>longer loading time</strong> compared to local uploads. However, the <strong>hierarchical clustering tree</strong> has now been constructed, allowing for <strong>direct exploration</strong> of the data without the need to click "Start Analysis".</p>
+              <p>Due to the <strong>sampling process</strong>, the hierarchical clustering tree may differ each time, leading to varying <strong>clustering results</strong>. For instance, in the <strong>stock data</strong>, three clusters may be obtained as shown in the <strong>video</strong> and <strong>paper</strong>, with the occasional addition of a <strong>small sub-cluster</strong>. The sub-cluster is located at the bottom and contain the corresponding lines.</p>
+              <p>To customize your analysis, <strong>drag the slider to the far left to reset the settings</strong>. After adjusting the sliders and <strong>sampling rate</strong>, remember to click "Start Analysis."</p>
+              <p>To upload your own data, it should be in CSV format. For <strong>time series data</strong>, the file should contain three columns: <strong>lineId</strong>, <strong>x</strong>, and <strong>y</strong>. For <strong>trajectory data</strong>, the file should contain four columns: <strong>lineId</strong>, <strong>time</strong>, <strong>x</strong>, and <strong>y</strong>. In the <strong>trajectory data</strong>, the <strong>time</strong> column represents the timestamp. All data formats in the CSV file should be in <strong>floating-point numbers</strong>, except for the <strong>lineId</strong> column which can be a <strong>string</strong>. Additionally, the data option can be found under the color option.</p>
+            </Modal>
           </Content>
         </Layout>
         <Footer className='App-footer' style={{ display: 'none' }}>
