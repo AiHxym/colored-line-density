@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-04-05 19:41:52
+ * @LastEditTime: 2023-04-05 19:49:39
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -88,6 +88,20 @@ const exampleData = [
     width: 700,
     height: 700
   }];
+
+const exampleSuccess = Modal.success({
+  title: 'Hierarchical clustering tree successfully completed with recommended parameters after data load',
+  content: (
+    <div>
+      <p>The <strong>example data requires downloading</strong> and has been pre-set with recommended <strong>sampling rates</strong> and <strong>density thresholds</strong>. This results in a <strong>longer loading time</strong> compared to local uploads. However, the <strong>hierarchical clustering tree</strong> has now been constructed, allowing for <strong>direct exploration</strong> of the data without the need to click "Start Analysis".</p>
+      <p>Due to the <strong>sampling process</strong>, the hierarchical clustering tree may differ each time, leading to varying <strong>clustering results</strong>. For instance, in the <strong>stock data</strong>, three clusters may be obtained as shown in the <strong>video</strong> and <strong>paper</strong>, with the occasional addition of a <strong>small sub-cluster</strong>. The sub-cluster is located at the bottom and contain the corresponding lines.</p>
+      <p>To customize your analysis, <strong>drag the slider to the far left to reset the settings</strong>. After adjusting the sliders and <strong>sampling rate</strong>, remember to click "Start Analysis."</p>
+      <p>To upload your own data, it should be in CSV format. For <strong>time series data</strong>, the file should contain three columns: <strong>lineId</strong>, <strong>x</strong>, and <strong>y</strong>. For <strong>trajectory data</strong>, the file should contain four columns: <strong>lineId</strong>, <strong>time</strong>, <strong>x</strong>, and <strong>y</strong>. In the <strong>trajectory data</strong>, the <strong>time</strong> column represents the timestamp. All data formats in the CSV file should be in <strong>floating-point numbers</strong>, except for the <strong>lineId</strong> column which can be a <strong>string</strong>. Additionally, the data option can be found under the color option.</p>
+
+    </div>
+  ),
+  onOk() { },
+});
 
 let a1 = 360 * 0.05;  // i, L, I
 let a2 = 360 * 0.22;  // L
@@ -1024,6 +1038,9 @@ function App() {
             {exampleDataUrl === "" && <span style={{ color: "red" }}>Please load a dataset (.csv file) first! </span>}
             {exampleDataUrl === "" && exampleData.map((dataI, i) => (<Button key={i} type="primary" style={{ marginRight: "10px" }}
               onClick={() => {
+                if (dataI.name === "ship.csv (363MB)") {
+                  return;
+                }
                 setExampleDataUrl(dataI.path);
                 setCanvasWidth(dataI.width);
                 setCanvasHeight(dataI.height);
