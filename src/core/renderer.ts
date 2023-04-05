@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-11-07 18:09:05
- * @LastEditTime: 2023-03-29 20:51:39
+ * @LastEditTime: 2023-04-05 12:21:19
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/core/renderer.ts
@@ -22,6 +22,7 @@ export function render(bins: BinningMap, binDensity: { [key: number]: [[number, 
     if (!ctx) {
         throw new Error("Failed to get canvas context");
     }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const width = canvas.width;
     const height = canvas.height;

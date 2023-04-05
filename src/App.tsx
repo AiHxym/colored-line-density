@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-04-05 01:52:31
+ * @LastEditTime: 2023-04-05 12:19:34
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -11,7 +11,8 @@ import { TypedFastBitSet } from 'typedfastbitset';
 import 'antd/dist/antd.min.css';
 import {
   Button, InputNumber, Layout, Select, Divider,
-  Row, Col, Slider, Upload, Checkbox, CheckboxOptionType, Tooltip
+  Row, Col, Slider, Upload, Checkbox, CheckboxOptionType,
+  Spin
 } from "antd";
 import type { CheckboxValueType } from 'antd/es/checkbox/Group';
 import Canvas from './components/Canvas';
@@ -205,6 +206,86 @@ function App() {
   const [initClusterNum, setInitClusterNum] = useState<number>(0);
   const [lineSetsForPickedClusters, setLineSetsForPickedClusters] = useState<MyTypedFastBitSet[]>([]);
   const [exampleDataUrl, setExampleDataUrl] = useState<string>('');
+  const [ifLoading, setIfLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (exampleDataUrl === '') return;
+    papa.parse(exampleDataUrl, {
+      header: true,
+      dynamicTyping: true,
+      download: true,
+      complete: (results: papa.ParseResult<any>) => {
+        function groupBy(xs: any[], key: string) {
+          return xs.reduce(function (rv, x) {
+            (rv[x[key]] = rv[x[key]] || []).push(x);
+            return rv;
+          }, {});
+        };
+
+        const data = results.data;
+        const groupedData = groupBy(data, 'lineId');
+        const lines: { times?: number[]; xValues: number[]; yValues: number[]; }[] = [];
+
+        let xMin = Infinity;
+        let xMax = -Infinity;
+        let yMin = Infinity;
+        let yMax = -Infinity;
+
+        for (let rawLine of Object.values(groupedData) as { lineId: number; time?: string; x: string; y: string }[][]) {
+          if (rawLine[0].time) {
+            (rawLine as { lineId: number; time: string; x: string; y: string }[]).sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
+          } else {
+            rawLine.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
+          }
+
+
+
+          if (rawLine[0].time !== undefined) {
+            const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
+            for (let i = 0; i < rawLine.length; ++i) {
+              line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
+              line.xValues.push(parseFloat(rawLine[i].x));
+              line.yValues.push(parseFloat(rawLine[i].y));
+            }
+            if (line.xValues.length <= 1) continue;
+            xMin = Math.min(xMin, ...line.xValues);
+            xMax = Math.max(xMax, ...line.xValues);
+            yMin = Math.min(yMin, ...line.yValues);
+            yMax = Math.max(yMax, ...line.yValues);
+            lines.push(line);
+          } else {
+            const line: { xValues: number[], yValues: number[] } = { xValues: [], yValues: [] };
+            for (let i = 0; i < rawLine.length; ++i) {
+              line.xValues.push(parseFloat(rawLine[i].x));
+              line.yValues.push(parseFloat(rawLine[i].y));
+            }
+            if (line.xValues.length <= 1) continue;
+            xMin = Math.min(xMin, ...line.xValues);
+            xMax = Math.max(xMax, ...line.xValues);
+            yMin = Math.min(yMin, ...line.yValues);
+            yMax = Math.max(yMax, ...line.yValues);
+            lines.push(line);
+          }
+        }
+        //console.log(lines);
+
+        if (lines[lines.length - 1].xValues.length <= 1) {
+          lines.pop();
+        }
+
+        // normalize data
+        for (let line of lines) {
+          line.xValues = line.xValues.map(x => (x - xMin) / (xMax - xMin) * canvasWidth);
+          line.yValues = line.yValues.map(y => (y - yMin) / (yMax - yMin) * canvasHeight);
+        }
+
+
+        //console.log(lines);
+        setLines(lines);
+        setLineSet(new Set(lines.map((line, i) => i)));
+      }
+    });
+  }, [canvasHeight, canvasWidth, exampleDataUrl]);
 
   useEffect(() => { // update drawing when clusterPickerCheckboxState changed
     //console.log(clusterPickerCheckboxState);
@@ -289,7 +370,7 @@ function App() {
     setHueCenters(newHueCenters);
     setBinClusterAssignment(newBinClusterAssignment);
     //setHues(hues);
-
+    setIfLoading(false);
   }, [binSize, canvasHeight, canvasWidth, lines, minDensity, samplingRate]);
 
 
@@ -762,6 +843,9 @@ function App() {
                   withCredentials={true}
                   method='post'
                   action={exampleDataUrl}
+                  onChange={() => {
+                    setIfLoading(true);
+                  }}
                   beforeUpload={file => {
                     papa.parse(file, {
                       header: true,
@@ -917,115 +1001,43 @@ function App() {
                 setMinDisplayDensity(dataI.minDensity);
                 setSamplingRate(dataI.samplingRate);
                 setDisplaySamplingRate(dataI.samplingRate);
-                papa.parse(dataI.path, {
-                  header: true,
-                  dynamicTyping: true,
-                  download: true,
-                  complete: (results: papa.ParseResult<any>) => {
-                    function groupBy(xs: any[], key: string) {
-                      return xs.reduce(function (rv, x) {
-                        (rv[x[key]] = rv[x[key]] || []).push(x);
-                        return rv;
-                      }, {});
-                    };
-
-                    const data = results.data;
-                    const groupedData = groupBy(data, 'lineId');
-                    const lines: { times?: number[]; xValues: number[]; yValues: number[]; }[] = [];
-
-                    let xMin = Infinity;
-                    let xMax = -Infinity;
-                    let yMin = Infinity;
-                    let yMax = -Infinity;
-
-                    for (let rawLine of Object.values(groupedData) as { lineId: number; time?: string; x: string; y: string }[][]) {
-                      if (rawLine[0].time) {
-                        (rawLine as { lineId: number; time: string; x: string; y: string }[]).sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
-                      } else {
-                        rawLine.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
-                      }
-
-
-
-                      if (rawLine[0].time !== undefined) {
-                        const line: { times: number[], xValues: number[], yValues: number[] } = { times: [], xValues: [], yValues: [] };
-                        for (let i = 0; i < rawLine.length; ++i) {
-                          line.times.push(parseFloat((rawLine[i] as { lineId: number; time: string; x: string; y: string }).time));
-                          line.xValues.push(parseFloat(rawLine[i].x));
-                          line.yValues.push(parseFloat(rawLine[i].y));
-                        }
-                        if (line.xValues.length <= 1) continue;
-                        xMin = Math.min(xMin, ...line.xValues);
-                        xMax = Math.max(xMax, ...line.xValues);
-                        yMin = Math.min(yMin, ...line.yValues);
-                        yMax = Math.max(yMax, ...line.yValues);
-                        lines.push(line);
-                      } else {
-                        const line: { xValues: number[], yValues: number[] } = { xValues: [], yValues: [] };
-                        for (let i = 0; i < rawLine.length; ++i) {
-                          line.xValues.push(parseFloat(rawLine[i].x));
-                          line.yValues.push(parseFloat(rawLine[i].y));
-                        }
-                        if (line.xValues.length <= 1) continue;
-                        xMin = Math.min(xMin, ...line.xValues);
-                        xMax = Math.max(xMax, ...line.xValues);
-                        yMin = Math.min(yMin, ...line.yValues);
-                        yMax = Math.max(yMax, ...line.yValues);
-                        lines.push(line);
-                      }
-                    }
-                    //console.log(lines);
-
-                    if (lines[lines.length - 1].xValues.length <= 1) {
-                      lines.pop();
-                    }
-
-                    // normalize data
-                    for (let line of lines) {
-                      line.xValues = line.xValues.map(x => (x - xMin) / (xMax - xMin) * dataI.width);
-                      line.yValues = line.yValues.map(y => (y - yMin) / (yMax - yMin) * dataI.height);
-                    }
-
-
-                    //console.log(lines);
-                    setLines(lines);
-                    setLineSet(new Set(lines.map((line, i) => i)));
-                  }
-                });
+                setIfLoading(true);
               }}>{dataI.name}</Button>))}
             <div style={{ height: "20px" }} />
-            <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
-              binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
-              minDisplayDensity={minDisplayDensity}
-              divideCluster={(x, y) => {
-                const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
-                const preservedHues = [];
+            <Spin tip="Loading..." spinning={ifLoading}>
+              <Canvas width={canvasWidth} height={canvasHeight} binSize={binSize}
+                binDensity={binDensity} lines={lines} hues={hues} binsInfo={binsInfo}
+                minDisplayDensity={minDisplayDensity}
+                divideCluster={(x, y) => {
+                  const nearestClusterId = getNearestClusterNodeId(binsInfo[x][y], hc as Hierarchical);
+                  const preservedHues = [];
 
-                const newIfFixClusterColor = [...ifFixClusterColor];
-                if (hc?.nodes !== undefined) {
-                  for (let i = 0; i < hc.nodes.length; ++i) {
-                    if (nearestClusterId !== hc.nodes[i].id) {
-                      preservedHues.push(hueCenters[i] as number);
-                    } else {
-                      if (ifFixClusterColor[i]) {
-                        alert('This cluster has been fixed!');
-                        return;
+                  const newIfFixClusterColor = [...ifFixClusterColor];
+                  if (hc?.nodes !== undefined) {
+                    for (let i = 0; i < hc.nodes.length; ++i) {
+                      if (nearestClusterId !== hc.nodes[i].id) {
+                        preservedHues.push(hueCenters[i] as number);
+                      } else {
+                        if (ifFixClusterColor[i]) {
+                          alert('This cluster has been fixed!');
+                          return;
+                        }
+                        newIfFixClusterColor.splice(i, 1);
                       }
-                      newIfFixClusterColor.splice(i, 1);
                     }
                   }
-                }
-                newIfFixClusterColor.push(false);
-                newIfFixClusterColor.push(false);
+                  newIfFixClusterColor.push(false);
+                  newIfFixClusterColor.push(false);
 
-                clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
-                const [newHueCenters, newBinClusterAssignment] = getHues(binsInfo, hc as Hierarchical, preservedHues, newIfFixClusterColor);
-                setHueCenters(newHueCenters);
-                setBinClusterAssignment(newBinClusterAssignment);
-                setIfFixClusterColor(newIfFixClusterColor);
-              }}
-              pickedBinDensity={pickedBinDensity}
-              pickedHues={pickedHues}></Canvas>
+                  clusterDivision(hc as Hierarchical, nearestClusterId, lineSet);
+                  const [newHueCenters, newBinClusterAssignment] = getHues(binsInfo, hc as Hierarchical, preservedHues, newIfFixClusterColor);
+                  setHueCenters(newHueCenters);
+                  setBinClusterAssignment(newBinClusterAssignment);
+                  setIfFixClusterColor(newIfFixClusterColor);
+                }}
+                pickedBinDensity={pickedBinDensity}
+                pickedHues={pickedHues}></Canvas>
+            </Spin>
           </Content>
         </Layout>
         <Footer className='App-footer' style={{ display: 'none' }}>
