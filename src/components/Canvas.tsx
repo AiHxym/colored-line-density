@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:42:21
- * @LastEditTime: 2023-03-28 01:30:11
+ * @LastEditTime: 2023-04-05 22:15:10
  * @LastEditors: Yumeng Xue
  * @Description: The canvas holding for diagram drawing
  * @FilePath: /trend-mixer/src/components/Canvas.tsx
@@ -114,7 +114,7 @@ export default function Canvas(props: CanvasProps) {
 
     return (
         <div className="canvas-container">
-            <canvas id="diagram" style={{ border: '1px solid black' }}
+            <canvas id="diagram" style={props.width > 790 ? { border: '1px solid black' } : { border: '1px solid black', marginRight: '10px' }}
                 width={props.width} height={props.height}
                 onMouseDown={(event) => {
                     //setIsMouseDown(true);
@@ -149,7 +149,7 @@ export default function Canvas(props: CanvasProps) {
                     setClickPoint([mouseX, props.height - mouseY]);
 
                 }}></canvas>
-            &nbsp;
+
             <canvas id="cluster-picker" style={{ border: '1px solid black' }}
                 width={props.width} height={props.height} />
             {/* <svg id="extra-renderer" style={{

@@ -1,7 +1,7 @@
 /*
  * @Author: Yumeng Xue
  * @Date: 2022-06-17 13:36:59
- * @LastEditTime: 2023-04-05 19:49:39
+ * @LastEditTime: 2023-04-05 22:22:36
  * @LastEditors: Yumeng Xue
  * @Description: 
  * @FilePath: /trend-mixer/src/App.tsx
@@ -69,7 +69,7 @@ const exampleData = [
   }, {
     name: "stock.csv (34.7MB)",
     path: "./data/stock.csv",
-    minDensity: 27,
+    minDensity: 29,
     samplingRate: 0.07,
     width: 1000,
     height: 500
@@ -89,7 +89,7 @@ const exampleData = [
     height: 700
   }];
 
-const exampleSuccess = Modal.success({
+const exampleSuccess = () => Modal.success({
   title: 'Hierarchical clustering tree successfully completed with recommended parameters after data load',
   content: (
     <div>
@@ -98,6 +98,19 @@ const exampleSuccess = Modal.success({
       <p>To customize your analysis, <strong>drag the slider to the far left to reset the settings</strong>. After adjusting the sliders and <strong>sampling rate</strong>, remember to click "Start Analysis."</p>
       <p>To upload your own data, it should be in CSV format. For <strong>time series data</strong>, the file should contain three columns: <strong>lineId</strong>, <strong>x</strong>, and <strong>y</strong>. For <strong>trajectory data</strong>, the file should contain four columns: <strong>lineId</strong>, <strong>time</strong>, <strong>x</strong>, and <strong>y</strong>. In the <strong>trajectory data</strong>, the <strong>time</strong> column represents the timestamp. All data formats in the CSV file should be in <strong>floating-point numbers</strong>, except for the <strong>lineId</strong> column which can be a <strong>string</strong>. Additionally, the data option can be found under the color option.</p>
 
+    </div>
+  ),
+  onOk() { },
+});
+
+const shipexampleInfo = () => Modal.info({
+  title: 'Ship Data',
+  content: (
+    <div>
+      <p>Please note that due to its size, we have decided not to upload the data onto the website.
+        If you require access to this data, please download it from the link (<a href="https://drive.google.com/file/d/1ChvYcBpqEeiCbmxAl23gq0tcC5-W8tDX/view?usp=sharing" target="_blank" rel="noopener noreferrer">Ship Data</a>) and import it using the "Click to Upload" button.
+      </p>
+      <p>To ensure optimal viewing and usage of the original geographic data information, we recommend a resolution of <strong>822x577</strong>.</p>
     </div>
   ),
   onOk() { },
@@ -1039,6 +1052,7 @@ function App() {
             {exampleDataUrl === "" && exampleData.map((dataI, i) => (<Button key={i} type="primary" style={{ marginRight: "10px" }}
               onClick={() => {
                 if (dataI.name === "ship.csv (363MB)") {
+                  shipexampleInfo();
                   return;
                 }
                 setExampleDataUrl(dataI.path);
